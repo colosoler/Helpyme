@@ -1,0 +1,28 @@
+{
+  "name": "helpyme",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Asesor Financiero Inteligente para PyMEs — SaaS cloud-native",
+  "license": "MIT",
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "build": "npm run build --workspaces --if-present",
+    "dev:api": "npm run dev --workspace @helpyme/api",
+    "dev:web": "npm run dev --workspace @helpyme/web",
+    "db:generate": "npm run generate --workspace @helpyme/db",
+    "db:migrate": "npm run migrate --workspace @helpyme/db"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "typescript": "^5.7.2"
+  }
+}
