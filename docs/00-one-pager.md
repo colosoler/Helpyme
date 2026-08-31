@@ -95,7 +95,7 @@ completa de cada componente está en los [ADR](./adr/) y en
 | Storage | **Cloudflare R2** | Extractos y comprobantes originales |
 | Procesamiento asíncrono | **Cloudflare Queues** | Parseo de extractos fuera del request |
 | Autenticación | **Better Auth** | Sesiones y organizaciones |
-| IA | **Anthropic Claude** (`claude-opus-5`) | Chat con *function calling* |
+| IA | **Gemini IA** (`Gemini Flash`) | Chat con *function calling* |
 | CI/CD | **GitHub Actions** | Lint, typecheck, tests y despliegue |
 
 **Por qué serverless y no un servidor tradicional:** una PyME entra al dashboard
