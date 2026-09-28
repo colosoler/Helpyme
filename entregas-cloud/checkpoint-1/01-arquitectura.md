@@ -179,7 +179,7 @@ sequenceDiagram
 ```
 
 **Herramientas expuestas al modelo en el MVP** — contratos en
-[`packages/shared/src/advisor-tools.ts`](../packages/shared/src/advisor-tools.ts):
+[`packages/shared/src/advisor-tools.ts`](../../packages/shared/src/advisor-tools.ts):
 
 | Función | Devuelve |
 |---|---|

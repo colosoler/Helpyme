@@ -32,7 +32,7 @@ sobre los resultados que le devuelve el backend.
 Las siete herramientas del MVP están en
 [01-arquitectura.md](../01-arquitectura.md#33-capa-de-ia--function-calling-estricto);
 los contratos, en
-[`packages/shared/src/advisor-tools.ts`](../../packages/shared/src/advisor-tools.ts).
+[`packages/shared/src/advisor-tools.ts`](../../../packages/shared/src/advisor-tools.ts).
 
 Tres controles independientes, en capas distintas:
 

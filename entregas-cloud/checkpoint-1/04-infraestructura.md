@@ -5,8 +5,8 @@
 
 La infraestructura se declara en archivos versionados, no en clicks de consola.
 Los recursos de Cloudflare viven en
-[`apps/api/wrangler.toml`](../apps/api/wrangler.toml) y el esquema de base en
-[`packages/db/src/schema.ts`](../packages/db/src/schema.ts): si un recurso
+[`apps/api/wrangler.toml`](../../apps/api/wrangler.toml) y el esquema de base en
+[`packages/db/src/schema.ts`](../../packages/db/src/schema.ts): si un recurso
 cambia, cambia en un pull request y queda en el historial.
 
 ---
@@ -15,7 +15,7 @@ cambia, cambia en un pull request y queda en el historial.
 
 | Herramienta | Versión | Para qué |
 |---|---|---|
-| Node.js | 22 LTS (ver [`.nvmrc`](../.nvmrc)) | Runtime de desarrollo |
+| Node.js | 22 LTS (ver [`.nvmrc`](../../.nvmrc)) | Runtime de desarrollo |
 | npm | 10+ | Workspaces del monorepo |
 | Git | 2.40+ | Control de versiones |
 | Cuenta Cloudflare | Plan Workers Paid (USD 5/mes) | Workers, R2 y Queues |
@@ -42,7 +42,9 @@ Helpyme/
 ├── packages/
 │   ├── db/                  Esquema Drizzle + migraciones versionadas
 │   └── shared/              Tipos y contratos compartidos (incluye tools del LLM)
-├── docs/                    Arquitectura, ADR, procesos
+├── docs/                    One-pager y documentación viva del equipo
+├── entregas-cloud/          Entregables del TPI, una carpeta por hito
+│   └── checkpoint-1/        Arquitectura, diagramas, ADR e infraestructura
 ├── .github/workflows/       CI/CD
 └── AI-DECISIONS.md          Bitácora obligatoria de uso de IA
 ```
@@ -118,8 +120,8 @@ curl http://localhost:8787/ready    # readiness: incluye chequeo real de la base
 ## 4. Secretos
 
 **Ningún secreto se commitea.** `.env`, `.dev.vars` y sus variantes están en
-[`.gitignore`](../.gitignore); la plantilla vacía y documentada es
-[`.env.example`](../.env.example).
+[`.gitignore`](../../.gitignore); la plantilla vacía y documentada es
+[`.env.example`](../../.env.example).
 
 | Entorno | Dónde viven |
 |---|---|
@@ -158,9 +160,9 @@ diff a ciegas.
 ## 6. Despliegue
 
 Automático vía GitHub Actions al mergear a `main`
-([`.github/workflows/`](../.github/workflows/)). **Está prohibido el push
+([`.github/workflows/`](../../.github/workflows/)). **Está prohibido el push
 directo a `main`**: todo cambio entra por pull request revisado
-([08-proceso-equipo](./08-proceso-equipo.md)).
+([08-proceso-equipo](../../docs/08-proceso-equipo.md)).
 
 Despliegue manual, solo para emergencias:
 
@@ -188,13 +190,15 @@ rollback del Worker deja la aplicación hablándole a una base que ya no entiend
 | Recurso | Estado |
 |---|---|
 | Repositorio con historial de commits convencionales | Listo |
-| Estructura de monorepo y tooling | Listo |
-| `wrangler.toml` con Worker, R2, Queues y cron declarados | Listo |
-| Esquema de base completo en Drizzle | Listo |
-| API con health checks y middleware | Listo |
-| Workflows de CI/CD | Listo |
+| Tooling raíz del monorepo (`package.json` con workspaces, `tsconfig.base.json`, `.editorconfig`, `.nvmrc`, `.env.example`, `.gitignore`) | Listo |
+| Arquitectura, diagramas, modelo de datos y ADR | Listo |
+| Workspaces `apps/api`, `apps/web`, `packages/db`, `packages/shared` | Pendiente |
+| `wrangler.toml` con Worker, R2, Queues y cron declarados | Pendiente |
+| Esquema de base en Drizzle (diseñado en [03-modelo-datos](./03-modelo-datos.md)) | Pendiente |
+| API con health checks y middleware | Pendiente |
+| Workflows de CI/CD | Pendiente |
+| `AI-DECISIONS.md` en la raíz del repositorio | Pendiente |
 | Provisión de cuentas cloud reales y primer deploy | Pendiente de ejecución por el equipo |
 
-Los pasos marcados como pendientes requieren credenciales de las cuentas del
-equipo y se ejecutan con este documento como guía; no son trabajo de diseño
-faltante.
+La provisión de cuentas requiere credenciales del equipo y se ejecuta con este
+documento como guía.

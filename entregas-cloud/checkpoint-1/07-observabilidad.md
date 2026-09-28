@@ -111,7 +111,7 @@ Esto permite responder la pregunta que más importa en este producto: *¿de dón
 salió este número que el asistente le mostró al usuario?* La respuesta es una
 fila en la base, no una reconstrucción.
 
-Es la contracara en tiempo de ejecución de [`AI-DECISIONS.md`](../AI-DECISIONS.md):
+Es la contracara en tiempo de ejecución de [`AI-DECISIONS.md`](../../AI-DECISIONS.md):
 uno audita la IA que escribió el código, el otro la IA que le responde al
 usuario.
 
@@ -121,9 +121,9 @@ usuario.
 
 | Ítem | Estado |
 |---|---|
-| `/health` y `/ready` con chequeo real de dependencias | Implementado |
-| Middleware de `requestId` y logs estructurados | Implementado |
-| Manejador de errores centralizado que nunca filtra el stack al cliente | Implementado |
+| `/health` y `/ready` con chequeo real de dependencias | Diseñado, implementación pendiente |
+| Middleware de `requestId` y logs estructurados | Diseñado, implementación pendiente |
+| Manejador de errores centralizado que nunca filtra el stack al cliente | Diseñado, implementación pendiente |
 | Dashboards de Cloudflare Analytics | Checkpoint 2 |
 | Alertas configuradas con notificación al equipo | Checkpoint 2 |
 | Métricas de negocio (imports, turnos de chat) | Checkpoint 2 |

@@ -1,7 +1,7 @@
 # One-Pager — Helpyme
 
 > **Entregable:** Hito *Clase 1* (24/08/2026) del TPI.
-> **Estado:** cerrado. Sirve de línea base para el [Checkpoint 1](./09-checkpoint-1.md).
+> **Estado:** cerrado. Sirve de línea base para el [Checkpoint 1](../entregas-cloud/checkpoint-1/README.md).
 
 ---
 
@@ -83,8 +83,8 @@ reportes de solo lectura.
 ## 5. Stack tentativo
 
 Elegido bajo el *Marco de Libertad Tecnológica* del TPI. La justificación
-completa de cada componente está en los [ADR](./adr/) y en
-[docs/01-arquitectura.md](./01-arquitectura.md).
+completa de cada componente está en los [ADR](../entregas-cloud/checkpoint-1/adr/) y en
+[01-arquitectura.md](../entregas-cloud/checkpoint-1/01-arquitectura.md).
 
 | Capa | Tecnología | Rol |
 |---|---|---|
@@ -121,4 +121,4 @@ modelo predictivo entrenado (*cold start*: sin historial no supera a un promedio
 móvil) · app móvil nativa · multi-moneda.
 
 El detalle completo, con la tabla de funcionalidades F1–F11, está en
-[docs/01-arquitectura.md](./01-arquitectura.md).
+[01-arquitectura.md](../entregas-cloud/checkpoint-1/01-arquitectura.md).

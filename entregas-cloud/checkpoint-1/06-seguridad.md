@@ -85,7 +85,7 @@ URL de minutos de vida.
 
 ## 4. Higiene de secretos en el repositorio
 
-- `.env`, `.dev.vars` y variantes están en [`.gitignore`](../.gitignore) desde el
+- `.env`, `.dev.vars` y variantes están en [`.gitignore`](../../.gitignore) desde el
   primer commit. La plantilla versionada es `.env.example`, **siempre con
   valores vacíos**.
 - Escaneo de secretos activo en el repositorio de GitHub.
@@ -120,7 +120,7 @@ respuesta rara, no una fuga de datos.**
 | El modelo filtra datos de otra empresa | `empresa_id` inyectado del lado del servidor; fuera del espacio de acciones del modelo |
 | Inyección de prompt vía descripción de un movimiento | Datos y instrucciones separados; superficie de acción mínima |
 | Dependencia de un proveedor externo | La orquestación está aislada tras una interfaz propia |
-| Código generado por IA con vulnerabilidades | Revisión humana obligatoria, registrada en [`AI-DECISIONS.md`](../AI-DECISIONS.md) |
+| Código generado por IA con vulnerabilidades | Revisión humana obligatoria, registrada en [`AI-DECISIONS.md`](../../AI-DECISIONS.md) |
 
 La última fila es la que enfatiza la Clase 0: la IA escribe sintaxis, el
 ingeniero audita el sistema. Toda contribución asistida pasa por code review de
