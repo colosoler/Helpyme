@@ -92,10 +92,18 @@ npx wrangler login
 npx wrangler r2 bucket create helpyme-documentos
 npx wrangler r2 bucket create helpyme-documentos-preview
 
-# Colas: principal y dead letter
+# Colas de produccion: principal y dead letter
 npx wrangler queues create helpyme-imports
 npx wrangler queues create helpyme-imports-dlq
+
+# Colas de preview: una cola admite un solo Worker consumidor,
+# asi que preview no puede compartir las de produccion
+npx wrangler queues create helpyme-imports-preview
+npx wrangler queues create helpyme-imports-preview-dlq
 ```
+
+Los recursos `*-dev` del bloque raíz de `wrangler.toml` no se crean: `wrangler
+dev` los simula en la máquina local.
 
 Los nombres deben coincidir con los declarados en `wrangler.toml`. Si difieren,
 el despliegue falla en el momento del `wrangler deploy` —falla temprano y
@@ -126,15 +134,16 @@ curl http://localhost:8787/ready    # readiness: incluye chequeo real de la base
 | Entorno | Dónde viven |
 |---|---|
 | Local | `apps/api/.dev.vars` (Worker) y `.env` (Next.js) |
-| Preview y producción — Worker | `wrangler secret put <NOMBRE>` |
+| Preview y producción — Worker | `wrangler secret put <NOMBRE> --env <entorno>` |
 | Preview y producción — Frontend | Variables de entorno del proyecto en Vercel |
-| CI | GitHub Actions secrets |
+| CI | GitHub Actions secrets: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, `DATABASE_URL` (entorno `production`) |
 
 ```bash
-npx wrangler secret put DATABASE_URL
-npx wrangler secret put ANTHROPIC_API_KEY
-npx wrangler secret put BETTER_AUTH_SECRET
-npx wrangler secret put MERCADOPAGO_CLIENT_SECRET
+# Desde apps/api, repetir con --env preview
+npx wrangler secret put DATABASE_URL --env production
+npx wrangler secret put ANTHROPIC_API_KEY --env production
+npx wrangler secret put BETTER_AUTH_SECRET --env production
+npx wrangler secret put MERCADOPAGO_CLIENT_SECRET --env production
 ```
 
 Los secretos de Cloudflare están cifrados en reposo y **no se pueden volver a
@@ -160,9 +169,14 @@ diff a ciegas.
 ## 6. Despliegue
 
 Automático vía GitHub Actions al mergear a `main`
-([`.github/workflows/`](../../.github/workflows/)). **Está prohibido el push
-directo a `main`**: todo cambio entra por pull request revisado
+([`.github/workflows/ci.yml`](../../.github/workflows/ci.yml)). **Está prohibido
+el push directo a `main`**: todo cambio entra por pull request revisado
 ([08-proceso-equipo](../../docs/08-proceso-equipo.md)).
+
+| Capa | Cómo se despliega |
+|---|---|
+| API (Worker) | Job `deploy-api` del CI: aplica migraciones y corre `wrangler deploy --env production`. Queda desactivado hasta crear la variable de repositorio `DEPLOY_ENABLED=true` y los secretos del entorno `production` |
+| Frontend | Integración Git de Vercel, con *Root Directory* `apps/web`: preview por PR y producción al mergear |
 
 Despliegue manual, solo para emergencias:
 
@@ -192,12 +206,12 @@ rollback del Worker deja la aplicación hablándole a una base que ya no entiend
 | Repositorio con historial de commits convencionales | Listo |
 | Tooling raíz del monorepo (`package.json` con workspaces, `tsconfig.base.json`, `.editorconfig`, `.nvmrc`, `.env.example`, `.gitignore`) | Listo |
 | Arquitectura, diagramas, modelo de datos y ADR | Listo |
-| Workspaces `apps/api`, `apps/web`, `packages/db`, `packages/shared` | Pendiente |
-| `wrangler.toml` con Worker, R2, Queues y cron declarados | Pendiente |
-| Esquema de base en Drizzle (diseñado en [03-modelo-datos](./03-modelo-datos.md)) | Pendiente |
-| API con health checks y middleware | Pendiente |
-| Workflows de CI/CD | Pendiente |
-| `AI-DECISIONS.md` en la raíz del repositorio | Pendiente |
+| Workspaces `apps/api`, `apps/web`, `packages/db`, `packages/shared` | Listo |
+| [`wrangler.toml`](../../apps/api/wrangler.toml) con Worker, R2, Queues con DLQ y cron por entorno | Listo |
+| [Esquema Drizzle](../../packages/db/src/schema.ts) y migración inicial generada | Listo |
+| API con `/health`, `/ready`, middleware y tests | Listo |
+| Workflow de CI con deploy (desactivado hasta provisionar) | Listo |
+| [`AI-DECISIONS.md`](../../AI-DECISIONS.md) en la raíz del repositorio | Listo; validación humana de cada entrada a cargo del equipo |
 | Provisión de cuentas cloud reales y primer deploy | Pendiente de ejecución por el equipo |
 
 La provisión de cuentas requiere credenciales del equipo y se ejecuta con este

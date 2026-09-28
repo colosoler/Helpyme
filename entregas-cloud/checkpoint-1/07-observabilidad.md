@@ -121,9 +121,10 @@ usuario.
 
 | Ítem | Estado |
 |---|---|
-| `/health` y `/ready` con chequeo real de dependencias | Diseñado, implementación pendiente |
-| Middleware de `requestId` y logs estructurados | Diseñado, implementación pendiente |
-| Manejador de errores centralizado que nunca filtra el stack al cliente | Diseñado, implementación pendiente |
+| `/health` y `/ready` con chequeo real de dependencias | Implementado, con tests |
+| Middleware de `requestId` y logs estructurados | Implementado |
+| Manejador de errores centralizado que nunca filtra el stack al cliente | Implementado, con tests |
+| Workers Logs activado en `wrangler.toml` | Configurado |
 | Dashboards de Cloudflare Analytics | Checkpoint 2 |
 | Alertas configuradas con notificación al equipo | Checkpoint 2 |
 | Métricas de negocio (imports, turnos de chat) | Checkpoint 2 |
