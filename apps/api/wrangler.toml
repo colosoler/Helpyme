@@ -96,4 +96,4 @@ dead_letter_queue = "helpyme-imports-dlq"
 crons = ["0 9 * * *"]
 
 # Secretos (NO van en este archivo): wrangler secret put <NOMBRE> --env <entorno>
-#   DATABASE_URL · BETTER_AUTH_SECRET · ANTHROPIC_API_KEY · MERCADOPAGO_CLIENT_SECRET
+#   DATABASE_URL · BETTER_AUTH_SECRET · GEMINI_API_KEY · MERCADOPAGO_CLIENT_SECRET

@@ -9,7 +9,7 @@ export interface Bindings {
   IMPORTS_QUEUE: Queue<ImportJob>;
   DATABASE_URL: string;
   BETTER_AUTH_SECRET?: string;
-  ANTHROPIC_API_KEY?: string;
+  GEMINI_API_KEY?: string;
   MERCADOPAGO_CLIENT_SECRET?: string;
 }
 

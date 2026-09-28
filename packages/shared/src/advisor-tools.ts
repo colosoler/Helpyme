@@ -1,13 +1,18 @@
 /**
  * Contratos de las herramientas que el asesor conversacional puede invocar.
  *
- * Invariantes (ver ADR-0007 y docs de seguridad):
+ * El formato es el de `FunctionDeclaration` de la API de Gemini (ADR-0010):
+ * `parametersJsonSchema` en lugar de `parameters`, porque el campo legado solo
+ * admite un subconjunto de OpenAPI y rechaza `additionalProperties`.
+ *
+ * Invariantes (ver ADR-0010 y docs de seguridad):
  * - El modelo NUNCA calcula: solo elige una de estas funciones y redacta sobre
  *   el resultado que devuelve la capa de cálculo.
  * - `empresa_id` no es parámetro de ninguna herramienta. Se inyecta desde la
  *   sesión del servidor al ejecutarla, así el modelo no tiene forma de
  *   expresar una consulta a otra empresa. Lo verifica test/advisor-tools.test.ts.
- * - Todo esquema es `strict` con `additionalProperties: false`.
+ * - Todo esquema lleva `additionalProperties: false` y se invoca en modo
+ *   `VALIDATED`, que valida cada llamada con decodificación restringida.
  *
  * Las fechas viajan como string `YYYY-MM-DD` y se validan del lado del
  * servidor antes de ejecutar la función.
@@ -27,9 +32,17 @@ export type JsonSchemaProperty =
 export interface AdvisorToolDefinition {
   name: AdvisorToolName;
   description: string;
-  strict: true;
-  input_schema: JsonSchemaObject;
+  parametersJsonSchema: JsonSchemaObject;
 }
+
+/**
+ * `toolConfig` de cada request al modelo. `VALIDATED` deja que el modelo
+ * elija entre llamar una función o responder en texto, pero toda llamada que
+ * emita cumple el esquema declarado.
+ */
+export const ADVISOR_TOOL_CONFIG = {
+  functionCallingConfig: { mode: "VALIDATED" },
+} as const;
 
 export type AdvisorToolName =
   | "getResumenFinanciero"
@@ -90,39 +103,33 @@ export const ADVISOR_TOOLS: readonly AdvisorToolDefinition[] = [
     name: "getResumenFinanciero",
     description:
       "Ingresos, egresos, resultado de caja y saldo consolidado de la empresa en un período.",
-    strict: true,
-    input_schema: rangoFechas,
+    parametersJsonSchema: rangoFechas,
   },
   {
     name: "getGastosPorCategoria",
     description: "Ranking de egresos agrupados por categoría en un período.",
-    strict: true,
-    input_schema: rangoFechas,
+    parametersJsonSchema: rangoFechas,
   },
   {
     name: "getGastosPorProveedor",
     description: "Ranking de egresos agrupados por proveedor en un período.",
-    strict: true,
-    input_schema: rangoFechas,
+    parametersJsonSchema: rangoFechas,
   },
   {
     name: "getCuentasPorCobrar",
     description: "Deudores pendientes con monto, fecha de vencimiento y antigüedad.",
-    strict: true,
-    input_schema: sinParametros,
+    parametersJsonSchema: sinParametros,
   },
   {
     name: "getCuentasPorPagar",
     description: "Pagos comprometidos pendientes con monto y fecha de vencimiento.",
-    strict: true,
-    input_schema: sinParametros,
+    parametersJsonSchema: sinParametros,
   },
   {
     name: "getProyeccionCaja",
     description:
       "Saldo proyectado día a día: saldo actual más cobros esperados menos pagos comprometidos.",
-    strict: true,
-    input_schema: {
+    parametersJsonSchema: {
       type: "object",
       properties: {
         dias: { type: "integer", description: "Horizonte de la proyección, entre 1 y 90 días." },
@@ -135,8 +142,7 @@ export const ADVISOR_TOOLS: readonly AdvisorToolDefinition[] = [
     name: "simularEscenario",
     description:
       "Simula el impacto en el resultado y la caja de una decisión hipotética. Devuelve también los supuestos usados.",
-    strict: true,
-    input_schema: {
+    parametersJsonSchema: {
       type: "object",
       properties: {
         tipo: {
