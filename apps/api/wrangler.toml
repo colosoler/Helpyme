@@ -1,0 +1,99 @@
+# =============================================================================
+# Helpyme API — infraestructura de Cloudflare declarada como código.
+# Procedimiento de alta de recursos: entregas-cloud/checkpoint-1/04-infraestructura.md
+#
+# El bloque raíz es SOLO para desarrollo local (`wrangler dev`, que simula R2 y
+# Queues en la máquina). Nunca se despliega sin `--env`.
+# Los bindings no se heredan entre entornos: cada [env.*] los redeclara.
+# =============================================================================
+
+name = "helpyme-api"
+main = "src/index.ts"
+compatibility_date = "2026-09-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Workers Logs: centraliza los logs JSON de API, consumidor y cron (07-observabilidad).
+[observability]
+enabled = true
+
+[vars]
+ENVIRONMENT = "development"
+CORS_ALLOWED_ORIGINS = "http://localhost:3000"
+
+[[r2_buckets]]
+binding = "DOCUMENTOS"
+bucket_name = "helpyme-documentos-dev"
+
+[[queues.producers]]
+binding = "IMPORTS_QUEUE"
+queue = "helpyme-imports-dev"
+
+[[queues.consumers]]
+queue = "helpyme-imports-dev"
+max_batch_size = 10
+max_batch_timeout = 5
+max_retries = 3
+dead_letter_queue = "helpyme-imports-dev-dlq"
+
+# 06:00 ART = 09:00 UTC. Recálculo diario de alertas por reglas.
+[triggers]
+crons = ["0 9 * * *"]
+
+# --- Preview: un Worker compartido por los PR -------------------------------
+# Una cola admite un solo Worker consumidor, por eso preview y producción
+# tienen colas propias y no comparten `helpyme-imports`.
+[env.preview]
+name = "helpyme-api-preview"
+
+[env.preview.vars]
+ENVIRONMENT = "preview"
+CORS_ALLOWED_ORIGINS = "https://helpyme-git-*.vercel.app"
+
+[[env.preview.r2_buckets]]
+binding = "DOCUMENTOS"
+bucket_name = "helpyme-documentos-preview"
+
+[[env.preview.queues.producers]]
+binding = "IMPORTS_QUEUE"
+queue = "helpyme-imports-preview"
+
+[[env.preview.queues.consumers]]
+queue = "helpyme-imports-preview"
+max_batch_size = 10
+max_batch_timeout = 5
+max_retries = 3
+dead_letter_queue = "helpyme-imports-preview-dlq"
+
+# `triggers` sí se hereda del bloque raíz: se anula para no correr el cron en preview.
+[env.preview.triggers]
+crons = []
+
+# --- Producción --------------------------------------------------------------
+[env.production]
+name = "helpyme-api-production"
+
+[env.production.vars]
+ENVIRONMENT = "production"
+# Reemplazar por el dominio definitivo de Vercel al hacer el primer deploy.
+CORS_ALLOWED_ORIGINS = "https://helpyme.vercel.app"
+
+[[env.production.r2_buckets]]
+binding = "DOCUMENTOS"
+bucket_name = "helpyme-documentos"
+
+[[env.production.queues.producers]]
+binding = "IMPORTS_QUEUE"
+queue = "helpyme-imports"
+
+[[env.production.queues.consumers]]
+queue = "helpyme-imports"
+max_batch_size = 10
+max_batch_timeout = 5
+max_retries = 3
+dead_letter_queue = "helpyme-imports-dlq"
+
+[env.production.triggers]
+crons = ["0 9 * * *"]
+
+# Secretos (NO van en este archivo): wrangler secret put <NOMBRE> --env <entorno>
+#   DATABASE_URL · BETTER_AUTH_SECRET · ANTHROPIC_API_KEY · MERCADOPAGO_CLIENT_SECRET
