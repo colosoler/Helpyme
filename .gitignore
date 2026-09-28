@@ -40,3 +40,6 @@ Thumbs.db
 .vscode/*
 !.vscode/extensions.json
 !.vscode/settings.json
+
+# Next.js (generado en cada build)
+next-env.d.ts
