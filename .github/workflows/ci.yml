@@ -1,0 +1,86 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Typecheck, tests y build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Tests
+        run: npm test
+
+      # Si alguien cambió schema.ts y no commiteó la migración, falla acá y no
+      # en producción.
+      - name: Migraciones al día con el esquema
+        run: |
+          npm run generate --workspace @helpyme/db
+          if [ -n "$(git status --porcelain packages/db/drizzle)" ]; then
+            echo "::error::schema.ts tiene cambios sin migración. Correr npm run db:generate y commitear el SQL."
+            git status --porcelain packages/db/drizzle
+            exit 1
+          fi
+
+      # El build de la API es un `wrangler deploy --dry-run`: valida también
+      # wrangler.toml y el tamaño del bundle, sin credenciales.
+      - name: Build
+        run: npm run build
+
+  deploy-api:
+    name: Deploy API a producción
+    needs: validate
+    # Apagado hasta provisionar Cloudflare y Neon: activar con la variable de
+    # repositorio DEPLOY_ENABLED=true (ver 04-infraestructura §6).
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.DEPLOY_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: production
+    concurrency:
+      group: deploy-production
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+
+      # Primero el esquema, después el código: las migraciones son compatibles
+      # hacia atrás, así un rollback del Worker sigue entendiendo la base.
+      - name: Migraciones
+        run: npm run db:migrate
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
+      - name: Deploy Worker
+        working-directory: apps/api
+        run: npx wrangler deploy --env production
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
