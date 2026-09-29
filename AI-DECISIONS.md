@@ -44,7 +44,7 @@ Copiar la plantilla al final del archivo, en el mismo PR que el código.
   estados a «Pendiente» antes de implementar nada. Si esos documentos se habían
   generado con un asistente, faltan las entradas correspondientes en esta
   bitácora.
-- **Validación y corrección humana:** *Pendiente: completar por quien revise el PR.*
+- **Validación y corrección humana:** Se verificó manualmente la estructura contra la consigna y se recorrieron los enlaces del índice. Los estados inicialmente marcados como implementados fueron corregidos cuando no existían artefactos verificables.
 
 ## 2026-09-28 — Contratos de herramientas del asesor (`packages/shared`)
 
@@ -66,7 +66,8 @@ Copiar la plantilla al final del archivo, en el mismo PR que el código.
     ejecutar.
   - Los parámetros de `simularEscenario` (`tipo`, `valor`, `meses`) los propuso
     la IA; la documentación no los definía.
-- **Validación y corrección humana:** *Pendiente: completar por quien revise el PR.*
+- **Validación y corrección humana:**  Se revisó manualmente advisor-tools.ts y se ejecutaron los tests asociados. Se verificó que existan las siete herramientas del MVP, que ninguna acepte empresa_id, tenant u organización, que los esquemas sean cerrados y que el modo de llamadas sea VALIDATED.
+La validación de rangos, fechas, inyección de empresa_id, ejecución de funciones y aislamiento multi-tenant queda pendiente hasta implementar el orquestador, la autenticación y la capa de cálculo.
 
 ## 2026-09-28 — Esquema Drizzle y migración inicial (`packages/db`)
 
@@ -93,7 +94,8 @@ Copiar la plantilla al final del archivo, en el mismo PR que el código.
   - Columnas agregadas que no estaban en el diagrama: `import.nombre_archivo`,
     `import.detalle_error`, `movimiento.import_id` y `created_at` en todas las
     tablas.
-- **Validación y corrección humana:** *Pendiente: completar por quien revise el PR.*
+- **Validación y corrección humana:** y se decidió eliminar el atributo empresa_id de la tabla usuario. Una empresa puede tener múltiples usuarios y la relación usuario-empresa se gestionará mediante la tabla membership de Better Auth. De esta forma, Better Auth será la fuente de verdad para determinar a qué empresa u organización pertenece cada usuario, evitando duplicar esa relación en el esquema propio. La incorporación de las tablas y migraciones propias de Better Auth queda pendiente de la implementación de autenticación en F1. Se decidió conservar el historial mediante borrado lógico, utilizando una marca deleted_at en lugar de eliminar físicamente empresas, usuarios o datos financieros.
+Esta decisión requiere revisar las relaciones que actualmente utilizan ON DELETE CASCADE, ya que no deben eliminar en cascada el historial de la empresa. La implementación de deleted_at, los filtros de registros activos y la migración correspondiente quedan pendientes de realizarse junto con la definición final de autenticación.
 
 ## 2026-09-28 — Infraestructura como código (`apps/api/wrangler.toml`)
 
@@ -117,7 +119,8 @@ Copiar la plantilla al final del archivo, en el mismo PR que el código.
   - Los dominios de CORS (`helpyme.vercel.app`, `helpyme-git-*.vercel.app`) son
     supuestos: hay que reemplazarlos por los reales al crear el proyecto en
     Vercel.
-- **Validación y corrección humana:** *Pendiente: completar por quien revise el PR.*
+- **Validación y corrección humana:** Se revisó apps/api/wrangler.toml y se ejecutaron correctamente los deploy --dry-run de preview y producción. Se confirmó que ambos entornos utilizan colas y buckets R2 independientes, y que el cron queda desactivado en preview.
+Durante la revisión se detectó una diferencia entre la documentación y la implementación: la documentación promete una branch efímera de Neon por pull request, mientras que el entorno preview actual utiliza una única branch y un único Worker compartidos. La documentación todavía no fue corregida. Se decide mantener el entorno preview compartido durante este checkpoint y postergar el aislamiento por PR para el Checkpoint 2.
 
 ## 2026-09-28 — Esqueleto del Worker y del frontend (`apps/api`, `apps/web`)
 
@@ -139,7 +142,10 @@ Copiar la plantilla al final del archivo, en el mismo PR que el código.
     otro dominio, pero es código de seguridad que merece revisión atenta.
   - Se fijaron Next.js 15 y TypeScript 5 aunque existen versiones mayores
     (Next 16, TypeScript 7), para respetar ADR-0006 y el `package.json` inicial.
-- **Validación y corrección humana:** *Pendiente: completar por quien revise el PR.*
+- **Validación y corrección humana:** Se ejecutaron npm test, npm run typecheck y npm run build. Los tests de la API finalizaron con 13/13 casos aprobados y los tests de packages/shared con 16/16 casos aprobados. El typecheck finalizó correctamente en API, frontend, base de datos y paquetes compartidos.
+El build de la API fue validado mediante wrangler deploy --dry-run para producción y finalizó correctamente. El build de Next.js 15 también compiló correctamente, generó las páginas estáticas y completó la verificación de tipos.
+Se confirmó el comportamiento de /health, /ready, X-Request-Id, manejo de errores, respuestas 404 y lista blanca de CORS. También se verificó que las herramientas del asesor no acepten parámetros de empresa y utilicen esquemas cerrados.
+Como riesgos pendientes, los tests todavía se ejecutan en Node y no en workerd, el consumidor de imports aún no procesa mensajes y el frontend continúa siendo un esqueleto mínimo. La validación corresponde al alcance implementado en este checkpoint.
 
 ## 2026-09-28 — Workflow de CI/CD
 
@@ -156,7 +162,7 @@ Copiar la plantilla al final del archivo, en el mismo PR que el código.
     depende de la revisión humana.
   - El workflow no pudo ejecutarse en GitHub desde la sesión; se verificaron
     localmente los mismos comandos (`npm ci`, typecheck, tests, build).
-- **Validación y corrección humana:** *Pendiente: completar por quien revise el PR.*
+- **Validación y corrección humana:** La validación quedó confirmada localmente y mediante GitHub Actions: el PR pasó correctamente el workflow de CI/CD. Se verificaron tests, typecheck, build y sincronización entre el esquema Drizzle y las migraciones. No se detectaron cambios de esquema sin migración asociada. El despliegue real continúa desactivado hasta provisionar las cuentas y secretos necesarios.
 
 ## 2026-09-28 — Migración del asesor de Anthropic Claude a Google Gemini
 
@@ -190,4 +196,4 @@ Copiar la plantilla al final del archivo, en el mismo PR que el código.
     supuestos.
   - Gemini 3.8 Flash tiene menos capacidad de razonamiento que `claude-opus-5`.
     Hace falta un set de preguntas de evaluación antes del Checkpoint 2.
-- **Validación y corrección humana:** *Pendiente: completar por quien revise el PR.*
+- **Validación y corrección humana:** Se ejecutó una búsqueda global de referencias a Anthropic, Claude y ANTHROPIC_API_KEY. Las coincidencias restantes corresponden únicamente a antecedentes, comparaciones de costos, riesgos documentados y al ADR-0007, que figura explícitamente como reemplazado por ADR-0010. No se encontraron dependencias ni variables operativas de Anthropic. La configuración activa utiliza Gemini mediante GEMINI_API_KEY, GEMINI_MODEL, parametersJsonSchema y modo VALIDATED.
