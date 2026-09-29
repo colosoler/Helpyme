@@ -5,8 +5,8 @@
 
 La infraestructura se declara en archivos versionados, no en clicks de consola.
 Los recursos de Cloudflare viven en
-[`apps/api/wrangler.toml`](../apps/api/wrangler.toml) y el esquema de base en
-[`packages/db/src/schema.ts`](../packages/db/src/schema.ts): si un recurso
+[`apps/api/wrangler.toml`](../../apps/api/wrangler.toml) y el esquema de base en
+[`packages/db/src/schema.ts`](../../packages/db/src/schema.ts): si un recurso
 cambia, cambia en un pull request y queda en el historial.
 
 ---
@@ -15,13 +15,13 @@ cambia, cambia en un pull request y queda en el historial.
 
 | Herramienta | Versión | Para qué |
 |---|---|---|
-| Node.js | 22 LTS (ver [`.nvmrc`](../.nvmrc)) | Runtime de desarrollo |
+| Node.js | 22 LTS (ver [`.nvmrc`](../../.nvmrc)) | Runtime de desarrollo |
 | npm | 10+ | Workspaces del monorepo |
 | Git | 2.40+ | Control de versiones |
 | Cuenta Cloudflare | Plan Workers Paid (USD 5/mes) | Workers, R2 y Queues |
 | Cuenta Neon | Free | PostgreSQL |
 | Cuenta Vercel | Hobby | Frontend |
-| Cuenta Anthropic | Con crédito de API | Asesor conversacional |
+| Cuenta de Google AI Studio | Proyecto con facturación activa (capa paga) | Asesor conversacional (API de Gemini) |
 
 **Por qué el plan pago de Cloudflare:** Cloudflare Queues no está disponible en
 el plan gratuito, y la cola es estructural en esta arquitectura
@@ -42,7 +42,9 @@ Helpyme/
 ├── packages/
 │   ├── db/                  Esquema Drizzle + migraciones versionadas
 │   └── shared/              Tipos y contratos compartidos (incluye tools del LLM)
-├── docs/                    Arquitectura, ADR, procesos
+├── docs/                    One-pager y documentación viva del equipo
+├── entregas-cloud/          Entregables del TPI, una carpeta por hito
+│   └── checkpoint-1/        Arquitectura, diagramas, ADR e infraestructura
 ├── .github/workflows/       CI/CD
 └── AI-DECISIONS.md          Bitácora obligatoria de uso de IA
 ```
@@ -90,10 +92,18 @@ npx wrangler login
 npx wrangler r2 bucket create helpyme-documentos
 npx wrangler r2 bucket create helpyme-documentos-preview
 
-# Colas: principal y dead letter
+# Colas de produccion: principal y dead letter
 npx wrangler queues create helpyme-imports
 npx wrangler queues create helpyme-imports-dlq
+
+# Colas de preview: una cola admite un solo Worker consumidor,
+# asi que preview no puede compartir las de produccion
+npx wrangler queues create helpyme-imports-preview
+npx wrangler queues create helpyme-imports-preview-dlq
 ```
+
+Los recursos `*-dev` del bloque raíz de `wrangler.toml` no se crean: `wrangler
+dev` los simula en la máquina local.
 
 Los nombres deben coincidir con los declarados en `wrangler.toml`. Si difieren,
 el despliegue falla en el momento del `wrangler deploy` —falla temprano y
@@ -118,21 +128,22 @@ curl http://localhost:8787/ready    # readiness: incluye chequeo real de la base
 ## 4. Secretos
 
 **Ningún secreto se commitea.** `.env`, `.dev.vars` y sus variantes están en
-[`.gitignore`](../.gitignore); la plantilla vacía y documentada es
-[`.env.example`](../.env.example).
+[`.gitignore`](../../.gitignore); la plantilla vacía y documentada es
+[`.env.example`](../../.env.example).
 
 | Entorno | Dónde viven |
 |---|---|
 | Local | `apps/api/.dev.vars` (Worker) y `.env` (Next.js) |
-| Preview y producción — Worker | `wrangler secret put <NOMBRE>` |
+| Preview y producción — Worker | `wrangler secret put <NOMBRE> --env <entorno>` |
 | Preview y producción — Frontend | Variables de entorno del proyecto en Vercel |
-| CI | GitHub Actions secrets |
+| CI | GitHub Actions secrets: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, `DATABASE_URL` (entorno `production`) |
 
 ```bash
-npx wrangler secret put DATABASE_URL
-npx wrangler secret put ANTHROPIC_API_KEY
-npx wrangler secret put BETTER_AUTH_SECRET
-npx wrangler secret put MERCADOPAGO_CLIENT_SECRET
+# Desde apps/api, repetir con --env preview
+npx wrangler secret put DATABASE_URL --env production
+npx wrangler secret put GEMINI_API_KEY --env production
+npx wrangler secret put BETTER_AUTH_SECRET --env production
+npx wrangler secret put MERCADOPAGO_CLIENT_SECRET --env production
 ```
 
 Los secretos de Cloudflare están cifrados en reposo y **no se pueden volver a
@@ -158,9 +169,14 @@ diff a ciegas.
 ## 6. Despliegue
 
 Automático vía GitHub Actions al mergear a `main`
-([`.github/workflows/`](../.github/workflows/)). **Está prohibido el push
-directo a `main`**: todo cambio entra por pull request revisado
-([08-proceso-equipo](./08-proceso-equipo.md)).
+([`.github/workflows/ci.yml`](../../.github/workflows/ci.yml)). **Está prohibido
+el push directo a `main`**: todo cambio entra por pull request revisado
+([08-proceso-equipo](../../docs/08-proceso-equipo.md)).
+
+| Capa | Cómo se despliega |
+|---|---|
+| API (Worker) | Job `deploy-api` del CI: aplica migraciones y corre `wrangler deploy --env production`. Queda desactivado hasta crear la variable de repositorio `DEPLOY_ENABLED=true` y los secretos del entorno `production` |
+| Frontend | Integración Git de Vercel, con *Root Directory* `apps/web`: preview por PR y producción al mergear |
 
 Despliegue manual, solo para emergencias:
 
@@ -188,13 +204,15 @@ rollback del Worker deja la aplicación hablándole a una base que ya no entiend
 | Recurso | Estado |
 |---|---|
 | Repositorio con historial de commits convencionales | Listo |
-| Estructura de monorepo y tooling | Listo |
-| `wrangler.toml` con Worker, R2, Queues y cron declarados | Listo |
-| Esquema de base completo en Drizzle | Listo |
-| API con health checks y middleware | Listo |
-| Workflows de CI/CD | Listo |
+| Tooling raíz del monorepo (`package.json` con workspaces, `tsconfig.base.json`, `.editorconfig`, `.nvmrc`, `.env.example`, `.gitignore`) | Listo |
+| Arquitectura, diagramas, modelo de datos y ADR | Listo |
+| Workspaces `apps/api`, `apps/web`, `packages/db`, `packages/shared` | Listo |
+| [`wrangler.toml`](../../apps/api/wrangler.toml) con Worker, R2, Queues con DLQ y cron por entorno | Listo |
+| [Esquema Drizzle](../../packages/db/src/schema.ts) y migración inicial generada | Listo |
+| API con `/health`, `/ready`, middleware y tests | Listo |
+| Workflow de CI con deploy (desactivado hasta provisionar) | Listo |
+| [`AI-DECISIONS.md`](../../AI-DECISIONS.md) en la raíz del repositorio | Listo; validación humana de cada entrada a cargo del equipo |
 | Provisión de cuentas cloud reales y primer deploy | Pendiente de ejecución por el equipo |
 
-Los pasos marcados como pendientes requieren credenciales de las cuentas del
-equipo y se ejecutan con este documento como guía; no son trabajo de diseño
-faltante.
+La provisión de cuentas requiere credenciales del equipo y se ejecuta con este
+documento como guía.

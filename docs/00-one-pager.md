@@ -1,7 +1,7 @@
 # One-Pager — Helpyme
 
 > **Entregable:** Hito *Clase 1* (24/08/2026) del TPI.
-> **Estado:** cerrado. Sirve de línea base para el [Checkpoint 1](./09-checkpoint-1.md).
+> **Estado:** cerrado. Sirve de línea base para el [Checkpoint 1](../entregas-cloud/checkpoint-1/README.md).
 
 ---
 
@@ -83,8 +83,8 @@ reportes de solo lectura.
 ## 5. Stack tentativo
 
 Elegido bajo el *Marco de Libertad Tecnológica* del TPI. La justificación
-completa de cada componente está en los [ADR](./adr/) y en
-[docs/01-arquitectura.md](./01-arquitectura.md).
+completa de cada componente está en los [ADR](../entregas-cloud/checkpoint-1/adr/) y en
+[01-arquitectura.md](../entregas-cloud/checkpoint-1/01-arquitectura.md).
 
 | Capa | Tecnología | Rol |
 |---|---|---|
@@ -95,7 +95,7 @@ completa de cada componente está en los [ADR](./adr/) y en
 | Storage | **Cloudflare R2** | Extractos y comprobantes originales |
 | Procesamiento asíncrono | **Cloudflare Queues** | Parseo de extractos fuera del request |
 | Autenticación | **Better Auth** | Sesiones y organizaciones |
-| IA | **Gemini IA** (`Gemini Flash`) | Chat con *function calling* |
+| IA | **Google Gemini** (`gemini-3.8-flash`) | Chat con *function calling* |
 | CI/CD | **GitHub Actions** | Lint, typecheck, tests y despliegue |
 
 **Por qué serverless y no un servidor tradicional:** una PyME entra al dashboard
@@ -121,4 +121,4 @@ modelo predictivo entrenado (*cold start*: sin historial no supera a un promedio
 móvil) · app móvil nativa · multi-moneda.
 
 El detalle completo, con la tabla de funcionalidades F1–F11, está en
-[docs/01-arquitectura.md](./01-arquitectura.md).
+[01-arquitectura.md](../entregas-cloud/checkpoint-1/01-arquitectura.md).

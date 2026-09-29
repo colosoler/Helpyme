@@ -1,7 +1,7 @@
 # Modelo de datos — Helpyme
 
 Implementación tipada en
-[`packages/db/src/schema.ts`](../packages/db/src/schema.ts). Este documento
+[`packages/db/src/schema.ts`](../../packages/db/src/schema.ts). Este documento
 explica el *porqué*; el esquema es la fuente de verdad.
 
 ---

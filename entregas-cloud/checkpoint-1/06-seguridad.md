@@ -33,7 +33,8 @@ handlers **no pueden** recibirla de otro lado.
 La cuarta capa merece énfasis. El modelo **no tiene forma de expresar** una
 consulta a otra empresa: no es que esté prohibido, es que no está en su espacio
 de acciones. Por eso se descartó text-to-SQL, donde una consulta generada sí
-podría omitir el filtro ([ADR-0007](./adr/0007-modelo-llm.md)).
+podría omitir el filtro ([ADR-0007](./adr/0007-modelo-llm.md), arquitectura
+que se mantiene en [ADR-0010](./adr/0010-modelo-llm-gemini.md)).
 
 ### 1.3 Verificación
 
@@ -76,6 +77,7 @@ elimina de raíz la peor clase de incidente posible en este producto.
 | Archivos subidos | R2 privado; acceso solo por URL firmada de vida corta emitida tras verificar propiedad |
 | Contraseñas | Hash gestionado por Better Auth; jamás en logs |
 | Secretos de la aplicación | Cloudflare Secrets, cifrados en reposo y no legibles desde la consola |
+| Datos enviados al LLM | Solo agregados ya calculados, nunca movimientos crudos. Siempre por la capa paga de la API de Gemini: en la gratuita, Google puede usar el contenido para mejorar sus productos |
 
 **Los buckets de R2 nunca son públicos.** Cada descarga pasa por el Worker, que
 verifica que el objeto pertenezca a la empresa de la sesión antes de firmar una
@@ -85,7 +87,7 @@ URL de minutos de vida.
 
 ## 4. Higiene de secretos en el repositorio
 
-- `.env`, `.dev.vars` y variantes están en [`.gitignore`](../.gitignore) desde el
+- `.env`, `.dev.vars` y variantes están en [`.gitignore`](../../.gitignore) desde el
   primer commit. La plantilla versionada es `.env.example`, **siempre con
   valores vacíos**.
 - Escaneo de secretos activo en el repositorio de GitHub.
@@ -119,8 +121,9 @@ respuesta rara, no una fuga de datos.**
 | El modelo inventa una cifra | No calcula: solo redacta sobre datos del backend, verificables contra el dashboard |
 | El modelo filtra datos de otra empresa | `empresa_id` inyectado del lado del servidor; fuera del espacio de acciones del modelo |
 | Inyección de prompt vía descripción de un movimiento | Datos y instrucciones separados; superficie de acción mínima |
-| Dependencia de un proveedor externo | La orquestación está aislada tras una interfaz propia |
-| Código generado por IA con vulnerabilidades | Revisión humana obligatoria, registrada en [`AI-DECISIONS.md`](../AI-DECISIONS.md) |
+| Dependencia de un proveedor externo | La orquestación está aislada tras una interfaz propia; el paso de Anthropic a Gemini ([ADR-0010](./adr/0010-modelo-llm-gemini.md)) no tocó la capa de cálculo |
+| El proveedor usa datos del cliente para entrenar | API key de un proyecto con facturación activa en todo entorno con datos reales; la capa gratuita solo con datos inventados |
+| Código generado por IA con vulnerabilidades | Revisión humana obligatoria, registrada en [`AI-DECISIONS.md`](../../AI-DECISIONS.md) |
 
 La última fila es la que enfatiza la Clase 0: la IA escribe sintaxis, el
 ingeniero audita el sistema. Toda contribución asistida pasa por code review de
