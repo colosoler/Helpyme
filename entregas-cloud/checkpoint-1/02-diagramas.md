@@ -19,19 +19,19 @@ flowchart TB
     helpyme["<b>Helpyme</b><br/>SaaS de consolidacion,<br/>diagnostico y asesoramiento<br/>financiero"]
 
     mp["Mercado Pago<br/>OAuth + API de pagos"]
-    anthropic["Anthropic API<br/>redaccion sobre datos"]
+    gemini["Gemini API<br/>redaccion sobre datos"]
     banco["Banco<br/>archivo de extracto<br/>descargado por el usuario"]
 
     dueno -->|"consulta, carga datos,<br/>pregunta en castellano"| helpyme
     contador -.->|"lectura de reportes<br/>(v1.1)"| helpyme
     helpyme -->|"importa cobros<br/>automaticamente"| mp
-    helpyme -->|"pide redaccion sobre<br/>cifras ya calculadas"| anthropic
+    helpyme -->|"pide redaccion sobre<br/>cifras ya calculadas"| gemini
     banco -.->|"CSV / XLSX subido<br/>manualmente"| dueno
 
     classDef sys fill:#1f6feb,stroke:#0b3a80,color:#fff
     classDef ext fill:#6e7681,stroke:#30363d,color:#fff
     class helpyme sys
-    class mp,anthropic,banco ext
+    class mp,gemini,banco ext
 ```
 
 **Nota de diseño:** el banco aparece con línea punteada y pasando *por el

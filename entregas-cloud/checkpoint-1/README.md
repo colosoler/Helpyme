@@ -34,7 +34,7 @@ con contexto, alternativas descartadas y consecuencias aceptadas:
 | Acceso a datos | Drizzle ORM | [ADR-0003](./adr/0003-orm-drizzle.md) |
 | Storage | Cloudflare R2 | [ADR-0004](./adr/0004-storage-r2.md) |
 | Procesamiento asíncrono | Cloudflare Queues | [ADR-0005](./adr/0005-procesamiento-asincronico.md) |
-| IA | Anthropic Claude con *function calling* | [ADR-0007](./adr/0007-modelo-llm.md) |
+| IA | Google Gemini Flash con *function calling* | [ADR-0010](./adr/0010-modelo-llm-gemini.md) (reemplaza a [ADR-0007](./adr/0007-modelo-llm.md)) |
 | Autenticación | Better Auth | [ADR-0008](./adr/0008-autenticacion-better-auth.md) |
 | Alcance | Sin agregación bancaria en v1 | [ADR-0009](./adr/0009-sin-agregacion-bancaria.md) |
 

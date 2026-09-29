@@ -55,7 +55,7 @@ flowchart TB
     end
 
     subgraph ext["Servicios externos"]
-        anthropic["Anthropic API<br/>claude-opus-5"]
+        gemini["Gemini API<br/>gemini-3.8-flash"]
         mp["Mercado Pago<br/>OAuth + API de pagos"]
     end
 
@@ -74,7 +74,7 @@ flowchart TB
 
     calc -->|"driver HTTP serverless"| pg
     orch -->|"tools ejecutadas contra"| calc
-    orch <-->|"streaming"| anthropic
+    orch <-->|"streaming"| gemini
     rest <-->|OAuth| mp
     cron --> calc
     cron --> pg
@@ -84,7 +84,7 @@ flowchart TB
     classDef extern fill:#6b7cff,stroke:#26307a,color:#fff
     class worker,consumer,cron,queue,r2 edge
     class pg data
-    class anthropic,mp extern
+    class gemini,mp extern
 ```
 
 **Cómo leer el diagrama.** Los números `1 · … 5 ·` marcan el flujo de ingesta
@@ -106,7 +106,7 @@ impuesta en el código, no solo en el prompt.
 | Acceso a datos | Drizzle ORM | Consultas tipadas y migraciones | SQL explícito y tipado end-to-end ([ADR-0003](./adr/0003-orm-drizzle.md)) |
 | Archivos | Cloudflare R2 | Originales para trazabilidad | Binding nativo, sin costo de egreso ([ADR-0004](./adr/0004-storage-r2.md)) |
 | Auth | Better Auth | Sesiones, usuarios, organizaciones | El modelo de organizaciones es el del producto ([ADR-0008](./adr/0008-autenticacion-better-auth.md)) |
-| IA | Anthropic Claude | Redacción sobre datos verificados | *Function calling* estricto ([ADR-0007](./adr/0007-modelo-llm.md)) |
+| IA | Google Gemini Flash | Redacción sobre datos verificados | *Function calling* validado ([ADR-0010](./adr/0010-modelo-llm-gemini.md)) |
 
 ---
 
@@ -161,18 +161,18 @@ sequenceDiagram
     participant W as Worker (orquestador)
     participant C as Capa de calculo
     participant DB as PostgreSQL
-    participant A as Anthropic API
+    participant A as Gemini API
 
     U->>W: por que gane menos este mes
     W->>DB: carga historial de conversacion
-    W->>A: messages + tools (esquemas strict)
-    A-->>W: tool_use getResumenFinanciero y getGastosPorCategoria
+    W->>A: contents + functionDeclarations (modo VALIDATED)
+    A-->>W: functionCall getResumenFinanciero y getGastosPorCategoria (en paralelo)
     Note over W,C: El LLM NO consulta la base.<br/>Solo nombra funciones.
     W->>C: ejecuta con empresa_id de la sesion
     C->>DB: SELECT agregados filtrados por empresa_id
     DB-->>C: filas
     C-->>W: cifras calculadas
-    W->>A: tool_result con datos reales
+    W->>A: functionResponse con datos reales
     A-->>W: redaccion en streaming
     W-->>U: SSE token a token
     W->>DB: persiste turno y tool_calls para auditoria
@@ -196,8 +196,10 @@ Tres garantías, en capas independientes:
 1. **`empresa_id` nunca es un parámetro del modelo.** Se inyecta desde la sesión
    al ejecutar la función. Aunque el LLM lo intentara, no puede leer datos de
    otra empresa: no tiene forma de expresarlo.
-2. **Esquemas con `strict: true`** y `additionalProperties: false`, así el input
-   de cada herramienta valida exactamente contra el contrato.
+2. **Esquemas cerrados y validados**: `additionalProperties: false` en cada
+   declaración y modo `VALIDATED`, que valida cada llamada del modelo con
+   decodificación restringida. El input de cada herramienta cumple exactamente
+   el contrato.
 3. **El *system prompt* obliga a declarar la falta de datos** en lugar de
    estimarla, y toda respuesta es verificable contra el dashboard.
 
@@ -278,7 +280,7 @@ razón de varias decisiones de arquitectura.
 | El usuario abandona en la carga de datos | Alto — es la fricción principal del producto | Mercado Pago automático desde el día uno: ve valor antes de subir el primer archivo |
 | Manejo de datos financieros sensibles | Alto | Nunca se piden credenciales bancarias; solo OAuth de Mercado Pago; aislamiento por `empresa_id`; archivos en R2 con URL firmada de vida corta |
 | El producto se percibe como asesoramiento financiero profesional | Legal / reputacional | Posicionamiento explícito como herramienta informativa, con supuestos visibles en cada simulación |
-| Costo variable de la API del LLM | Medio | *Prompt caching* del system prompt y los esquemas de herramientas; las alertas se generan por reglas, no por el modelo. Ver [05-costos-finops](./05-costos-finops.md) |
+| Costo variable de la API del LLM | Medio | Modelo de gama Flash para una tarea acotada por diseño; el modelo recibe agregados, nunca filas crudas; las alertas se generan por reglas, no por el modelo. Ver [05-costos-finops](./05-costos-finops.md) |
 
 ---
 

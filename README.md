@@ -17,7 +17,7 @@ TPI de Desarrollo de Software Cloud, UTN FRLP 2026.
 ## Stack
 
 Next.js en Vercel · Cloudflare Workers + Hono · Neon PostgreSQL + Drizzle ·
-Cloudflare R2 y Queues · Better Auth · Anthropic Claude · GitHub Actions.
+Cloudflare R2 y Queues · Better Auth · Google Gemini · GitHub Actions.
 Cada elección está justificada en los [ADR](entregas-cloud/checkpoint-1/adr/).
 
 ## Estructura

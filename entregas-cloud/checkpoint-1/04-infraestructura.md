@@ -21,7 +21,7 @@ cambia, cambia en un pull request y queda en el historial.
 | Cuenta Cloudflare | Plan Workers Paid (USD 5/mes) | Workers, R2 y Queues |
 | Cuenta Neon | Free | PostgreSQL |
 | Cuenta Vercel | Hobby | Frontend |
-| Cuenta Anthropic | Con crédito de API | Asesor conversacional |
+| Cuenta de Google AI Studio | Proyecto con facturación activa (capa paga) | Asesor conversacional (API de Gemini) |
 
 **Por qué el plan pago de Cloudflare:** Cloudflare Queues no está disponible en
 el plan gratuito, y la cola es estructural en esta arquitectura
@@ -141,7 +141,7 @@ curl http://localhost:8787/ready    # readiness: incluye chequeo real de la base
 ```bash
 # Desde apps/api, repetir con --env preview
 npx wrangler secret put DATABASE_URL --env production
-npx wrangler secret put ANTHROPIC_API_KEY --env production
+npx wrangler secret put GEMINI_API_KEY --env production
 npx wrangler secret put BETTER_AUTH_SECRET --env production
 npx wrangler secret put MERCADOPAGO_CLIENT_SECRET --env production
 ```
