@@ -157,3 +157,37 @@ Copiar la plantilla al final del archivo, en el mismo PR que el código.
   - El workflow no pudo ejecutarse en GitHub desde la sesión; se verificaron
     localmente los mismos comandos (`npm ci`, typecheck, tests, build).
 - **Validación y corrección humana:** *Pendiente: completar por quien revise el PR.*
+
+## 2026-09-28 — Migración del asesor de Anthropic Claude a Google Gemini
+
+- **Problema abordado:** el equipo decidió usar Gemini como modelo del asesor
+  (commit `008639e` en el one-pager); el resto del entregable y el código
+  seguían diciendo Anthropic Claude.
+- **Prompt / Herramienta:** Claude Code (Claude Opus 5.5). *«Cambiamos a
+  Gemini. Vamos a utilizar la IA de Gemini, por lo que hay que cambiar lo
+  demás. En esta misma rama.»*
+- **Código / Arquitectura generada:** ADR-0010 que reemplaza a ADR-0007 con
+  `gemini-3.8-flash`; contratos del asesor en formato `FunctionDeclaration` de
+  Gemini (`parametersJsonSchema` y modo `VALIDATED`); variables de entorno
+  `GEMINI_API_KEY` y `GEMINI_MODEL`; costos recalculados; diagramas,
+  arquitectura, seguridad, infraestructura, README y one-pager actualizados.
+  Modelo, precios, caché y formato de funciones se relevaron de la
+  documentación oficial de Google el 28/09/2026.
+- **Riesgos señalados por la IA:**
+  - **Las razones del cambio en ADR-0010 las redactó la IA** (costo, capa
+    gratuita, modo `VALIDATED`, llamadas en paralelo). El equipo tiene que
+    confirmar que son las suyas: es lo que se va a defender.
+  - El caché implícito de Gemini exige 4.096 tokens de prefijo y el del asesor
+    ronda los 2.000: la palanca de costo principal del diseño original no
+    aplica. Se documentó en lugar de suponer un descuento.
+  - El precio de `gemini-3.8-flash` se duplica el 01/01/2027; las estimaciones
+    usan el precio de 2027.
+  - La capa gratuita de Gemini permite a Google usar el contenido: no se puede
+    usar con datos reales. Verificar contra los términos vigentes.
+  - La tabla de escala del documento de costos original era inconsistente: a
+    100 y 500 empresas, el costo del LLM solo superaba el total declarado. Se
+    rehízo con precios de Neon relevados, pero las horas de cómputo son
+    supuestos.
+  - Gemini 3.8 Flash tiene menos capacidad de razonamiento que `claude-opus-5`.
+    Hace falta un set de preguntas de evaluación antes del Checkpoint 2.
+- **Validación y corrección humana:** *Pendiente: completar por quien revise el PR.*
