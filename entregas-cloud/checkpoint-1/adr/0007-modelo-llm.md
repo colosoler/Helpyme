@@ -1,6 +1,6 @@
 # ADR-0007 — Anthropic Claude con *function calling* estricto
 
-**Estado:** Aceptada · **Fecha:** 2026-09
+**Estado:** Reemplazada por [ADR-0010](./0010-modelo-llm-gemini.md) · **Fecha:** 2026-09
 
 ## Contexto
 

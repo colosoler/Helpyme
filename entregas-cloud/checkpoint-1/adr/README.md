@@ -23,9 +23,10 @@ pagar).
 | [0004](./0004-storage-r2.md) | Cloudflare R2 para archivos originales | Aceptada |
 | [0005](./0005-procesamiento-asincronico.md) | Procesamiento asíncrono con Cloudflare Queues | Aceptada |
 | [0006](./0006-frontend-vercel.md) | Next.js sobre Vercel para el frontend | Aceptada |
-| [0007](./0007-modelo-llm.md) | Anthropic Claude con *function calling* estricto | Aceptada |
+| [0007](./0007-modelo-llm.md) | Anthropic Claude con *function calling* estricto | Reemplazada por ADR-0010 |
 | [0008](./0008-autenticacion-better-auth.md) | Better Auth con modelo de organizaciones | Aceptada |
 | [0009](./0009-sin-agregacion-bancaria.md) | Sin agregación bancaria automática en v1 | Aceptada |
+| [0010](./0010-modelo-llm-gemini.md) | Google Gemini Flash con *function calling* validado | Aceptada |
 
 ## Estados posibles
 
