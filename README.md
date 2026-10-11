@@ -13,6 +13,7 @@ TPI de Desarrollo de Software Cloud, UTN FRLP 2026.
 |---|---|
 | One-Pager (Clase 1) | [docs/00-one-pager.md](docs/00-one-pager.md) |
 | Checkpoint 1: Definición de Arquitectura | [entregas-cloud/checkpoint-1/](entregas-cloud/checkpoint-1/) |
+| Checkpoint 2: Demo Funcional (en curso) | [entregas-cloud/checkpoint-2/](entregas-cloud/checkpoint-2/) |
 
 ## Stack
 
