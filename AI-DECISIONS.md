@@ -197,3 +197,43 @@ Como riesgos pendientes, los tests todavía se ejecutan en Node y no en workerd,
   - Gemini 3.8 Flash tiene menos capacidad de razonamiento que `claude-opus-5`.
     Hace falta un set de preguntas de evaluación antes del Checkpoint 2.
 - **Validación y corrección humana:** Se ejecutó una búsqueda global de referencias a Anthropic, Claude y ANTHROPIC_API_KEY. Las coincidencias restantes corresponden únicamente a antecedentes, comparaciones de costos, riesgos documentados y al ADR-0007, que figura explícitamente como reemplazado por ADR-0010. No se encontraron dependencias ni variables operativas de Anthropic. La configuración activa utiliza Gemini mediante GEMINI_API_KEY, GEMINI_MODEL, parametersJsonSchema y modo VALIDATED.
+
+## 2026-10-11 — Plan de trabajo e issues del Checkpoint 2
+
+- **Problema abordado:** a cuatro semanas del Checkpoint 2 el repositorio tenía
+  solo el esqueleto del Checkpoint 1, sin nada desplegado, sin issues y sin
+  reparto de tareas entre los integrantes.
+- **Prompt / Herramienta:** Claude Code (Claude Opus 5.5). *«Analizando esto y
+  toda la documentación actual del repositorio, ¿puedes armar un plan a seguir
+  para empezar el Checkpoint 2?»* (se adjuntó la consigna del TPI). La IA
+  propuso tres alcances y tres formas de ejecución; el integrante eligió
+  «camino de demo + extras» y «plan en el repositorio + issues», sin código.
+- **Código / Arquitectura generada:** carpeta `entregas-cloud/checkpoint-2/`
+  con el plan (`01-plan.md`: alcance, frentes, cronograma, tareas, estrategia
+  de pruebas y riesgos) y el índice del hito. En GitHub, el milestone
+  «Checkpoint 2», seis etiquetas y 31 issues (#2 a #32) con criterio de
+  aceptación y dependencias, sin asignar. No se generó código de producto.
+- **Riesgos señalados por la IA:**
+  - **El recorte de alcance lo propuso la IA** y lo aceptó un solo integrante:
+    F2 (Mercado Pago), F11 (simulador) y XLSX pasan a la Defensa Final. El
+    equipo completo tiene que confirmarlo.
+  - **El diagnóstico de cookies entre sitios es un razonamiento, no una
+    prueba.** La IA concluyó que la sesión `SameSite=Lax` no viaja entre
+    `*.vercel.app` y `*.workers.dev` y recomendó *rewrites* de Next. ADR-0011
+    (#12) tiene que confirmarlo contra el sistema desplegado.
+  - Tres supuestos técnicos sin verificar, cada uno convertido en un spike:
+    que Better Auth funcione con el driver HTTP de Neon (#14), que
+    `@cloudflare/vitest-pool-workers` sea compatible con la versión de Vitest
+    del repositorio (#8) y que el streaming del chat atraviese el rewrite de
+    Vercel (#28).
+  - Los huecos del esquema (import sin estado `confirmado`, `movimiento` sin
+    proveedor, saldo sin definir, `alerta` sin idempotencia, colisión de
+    `hash_dedup` entre movimientos idénticos) los detectó la IA leyendo
+    `schema.ts` contra los contratos. Señaló el problema; la solución de cada
+    uno no está decidida.
+  - Los tamaños y las semanas de cada tarea son estimaciones de la IA, hechas
+    sin conocer la disponibilidad real de cada integrante.
+  - La IA no pudo consultar GitHub Projects porque el token no tenía ese
+    permiso: no verificó si el tablero existe.
+- **Validación y corrección humana:** pendiente. La escribe y la firma quien
+  revise el PR de este plan.
