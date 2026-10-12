@@ -6,8 +6,11 @@ import { createLogger } from "../lib/logger";
  * Consumidor de `helpyme-imports`: parseo, deduplicación y categorización de
  * extractos fuera del request HTTP (ADR-0005).
  *
+ * Escribe en `import_fila`, no en `movimiento`: los movimientos existen recién
+ * cuando el usuario confirma (ADR-0014).
+ *
  * La entrega es «al menos una vez»: el procesamiento tiene que ser idempotente,
- * y lo es por el índice único (empresa_id, hash_dedup).
+ * y lo es por el índice único (import_id, numero_fila).
  */
 export async function handleImportBatch(
   batch: MessageBatch<ImportJob>,
