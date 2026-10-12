@@ -233,5 +233,9 @@ Reglas del equipo:
    reviewer tiene que poder ver qué le pasa a la base en ese PR.
 2. **Nunca se edita una migración ya mergeada a `main`.** Si está mal, se
    agrega una nueva que corrija.
-3. **Toda migración se prueba primero en la branch de Neon del PR**, que tiene
-   el mismo esquema que producción.
+3. **Toda migración se prueba primero en la branch de Neon del desarrollador**
+   y la vuelve a aplicar el CI sobre una branch efímera creada desde `main`,
+   que tiene el mismo esquema que producción
+   ([ADR-0013](./adr/0013-preview-compartido.md)).
+4. **Un solo PR de esquema abierto a la vez.** Dos ramas que regeneran el
+   snapshot de Drizzle chocan entre sí.

@@ -68,7 +68,8 @@ npm install
 1. Crear un proyecto en [neon.tech](https://neon.tech), región `aws-us-east-1`
    (la más cercana con plan gratuito).
 2. **Crear una branch propia por desarrollador** desde `main`. No se trabaja
-   contra la branch principal.
+   contra la branch principal. Crear también la branch `preview`, que usa el
+   Worker de preview.
 3. Copiar la *connection string* con `?sslmode=require`.
 
 ```bash
@@ -157,12 +158,20 @@ quiere.
 | Entorno | Frontend | API | Base de datos |
 |---|---|---|---|
 | **Local** | `localhost:3000` | `localhost:8787` (`wrangler dev`) | Branch de Neon por desarrollador |
-| **Preview** | URL efímera de Vercel por PR | Worker `env=preview` | Branch de Neon efímera del PR |
+| **CI** (pruebas de integración) | — | Runtime de Workers dentro del job | Branch de Neon efímera, una por corrida |
+| **Preview** | URL de Vercel por PR | Worker `env=preview`, compartido | Branch `preview` de Neon, compartida |
 | **Producción** | Dominio de producción | Worker `env=production` | Branch `main` de Neon |
 
-Cada pull request levanta un entorno completo y aislado. Es lo que hace que el
-code review cruzado que exige el TPI sea sobre algo que funciona y no sobre un
-diff a ciegas.
+**El preview es un solo entorno compartido**: cada PR redespliega el mismo
+Worker y gana el último. Alcanza para que el code review cruzado que exige el
+TPI sea sobre algo que funciona y no sobre un diff a ciegas, pero quien revisa
+confirma que el preview tiene desplegado el PR que está mirando. El aislamiento
+por corrida se reserva para las pruebas de integración
+([ADR-0013](./adr/0013-preview-compartido.md)).
+
+En todos los entornos **el navegador habla solo con el origen del frontend**,
+que reenvía `/api/*` al Worker: es lo que hace que la cookie de sesión funcione
+([ADR-0011](./adr/0011-sesion-first-party-por-proxy.md)).
 
 ---
 
