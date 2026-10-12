@@ -132,6 +132,10 @@ que se diseña con cuidado:
 5. Las correcciones **generan reglas persistentes**: la próxima vez que aparezca
    esa descripción, se categoriza sola.
 
+**Hasta que el usuario confirma, las filas no son movimientos.** Esperan en una
+tabla aparte y no cuentan en ningún indicador
+([ADR-0014](./adr/0014-staging-de-imports.md)).
+
 Los duplicados se descartan por **hash de (fecha + monto + descripción
 normalizada)**, porque el usuario va a subir extractos con períodos solapados.
 El hash es una columna con índice único por empresa, así que la deduplicación la

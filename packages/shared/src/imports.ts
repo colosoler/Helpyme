@@ -1,5 +1,10 @@
-/** Máquina de estados de un import de extracto (ADR-0005). */
-export const ESTADOS_IMPORT = ["pendiente", "procesando", "listo", "error"] as const;
+/**
+ * Máquina de estados de un import de extracto (ADR-0005 y ADR-0014):
+ * `pendiente → procesando → listo → confirmado`, o `error`.
+ * En `listo` las filas esperan la revisión del usuario; los movimientos
+ * existen recién en `confirmado`.
+ */
+export const ESTADOS_IMPORT = ["pendiente", "procesando", "listo", "confirmado", "error"] as const;
 
 export type EstadoImport = (typeof ESTADOS_IMPORT)[number];
 

@@ -8,6 +8,13 @@
       "when": 1790637694649,
       "tag": "0000_inicial",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1791827575359,
+      "tag": "0001_integridad_y_staging_de_imports",
+      "breakpoints": true
     }
   ]
 }
