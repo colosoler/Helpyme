@@ -61,7 +61,7 @@ flowchart TB
 
     browser -->|HTTPS| cdn
     cdn --> next
-    next -->|"fetch /v1 con sesion"| mw
+    next -->|"proxy /api/* con cookie first-party"| mw
     mw --> rest
     rest --> calc
     rest --> orch
@@ -93,19 +93,24 @@ cola. Nótese que `orch` —el orquestador del LLM— **nunca toca PostgreSQL
 directamente**: solo puede invocar funciones de `calc`. Esa restricción está
 impuesta en el código, no solo en el prompt.
 
+**El navegador nunca llama al Worker directamente.** Habla con el origen del
+frontend, y Vercel reenvía `/api/*` al Worker. Es lo que permite que la sesión
+sea una cookie *first-party*
+([ADR-0011](./adr/0011-sesion-first-party-por-proxy.md)).
+
 ---
 
 ## 2. Componentes y responsabilidades
 
 | Componente | Servicio | Responsabilidad | Por qué acá |
 |---|---|---|---|
-| Frontend | Vercel | Render, dashboard, chat con streaming, formularios | Despliegue nativo de Next.js, previews por PR ([ADR-0006](./adr/0006-frontend-vercel.md)) |
+| Frontend | Vercel | Render, dashboard, chat con streaming, formularios, proxy de `/api/*` | Despliegue nativo de Next.js, previews por PR ([ADR-0006](./adr/0006-frontend-vercel.md), [ADR-0011](./adr/0011-sesion-first-party-por-proxy.md)) |
 | API | Cloudflare Workers + Hono | REST, autorización, cálculo, orquestación | Escalado a cero, cold start casi nulo ([ADR-0001](./adr/0001-backend-cloudflare-workers.md)) |
 | Procesamiento | Workers + Queues | Parseo y categorización de extractos | Saca el trabajo pesado del request ([ADR-0005](./adr/0005-procesamiento-asincronico.md)) |
 | Datos | Neon PostgreSQL | Persistencia relacional multi-tenant | Agregaciones financieras + branching ([ADR-0002](./adr/0002-persistencia-neon-postgres.md)) |
 | Acceso a datos | Drizzle ORM | Consultas tipadas y migraciones | SQL explícito y tipado end-to-end ([ADR-0003](./adr/0003-orm-drizzle.md)) |
 | Archivos | Cloudflare R2 | Originales para trazabilidad | Binding nativo, sin costo de egreso ([ADR-0004](./adr/0004-storage-r2.md)) |
-| Auth | Better Auth | Sesiones, usuarios, organizaciones | El modelo de organizaciones es el del producto ([ADR-0008](./adr/0008-autenticacion-better-auth.md)) |
+| Auth | Better Auth | Sesiones, usuarios, organizaciones | El modelo de organizaciones es el del producto ([ADR-0008](./adr/0008-autenticacion-better-auth.md), [ADR-0012](./adr/0012-empresa-es-la-organizacion.md)) |
 | IA | Google Gemini Flash | Redacción sobre datos verificados | *Function calling* validado ([ADR-0010](./adr/0010-modelo-llm-gemini.md)) |
 
 ---

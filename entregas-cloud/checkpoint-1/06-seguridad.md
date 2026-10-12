@@ -54,12 +54,21 @@ El aislamiento se prueba, no se asume. Tests obligatorios antes del Checkpoint 2
 - **Better Auth** gestiona sesiones, usuarios y organizaciones
   ([ADR-0008](./adr/0008-autenticacion-better-auth.md)). No escribimos hashing
   de contraseñas ni manejo de sesiones propio.
-- Cookies `HttpOnly`, `Secure` y `SameSite=Lax`.
-- Roles dentro de la empresa: `owner` y `member`. El MVP distingue quién puede
-  invitar usuarios y desconectar integraciones.
-- **CORS con lista blanca explícita** de orígenes. Nunca `*`: el frontend vive
-  en otro dominio ([ADR-0006](./adr/0006-frontend-vercel.md)) y un comodín con
-  credenciales es una vulnerabilidad, no una comodidad de desarrollo.
+- Cookies `HttpOnly`, `Secure` y `SameSite=Lax`, **siempre *first-party***. El
+  frontend en `vercel.app` y la API en `workers.dev` son sitios distintos para
+  el navegador, y una cookie `Lax` no viaja en un `fetch` entre sitios. Por eso
+  el navegador habla solo con el origen del frontend, que reenvía `/api/*` al
+  Worker ([ADR-0011](./adr/0011-sesion-first-party-por-proxy.md)).
+- **Las respuestas de la API llevan `Cache-Control: no-store`.** El CDN de
+  Vercel respeta el caché que indique el origen en los rewrites externos: una
+  respuesta financiera cacheable podría servirse a otro usuario.
+- Roles dentro de la empresa: `owner` y `member`, guardados en la membresía y
+  no en el usuario ([ADR-0012](./adr/0012-empresa-es-la-organizacion.md)). El
+  MVP distingue quién puede invitar usuarios y desconectar integraciones.
+- **CORS con lista blanca explícita** de orígenes. Nunca `*`: un comodín con
+  credenciales es una vulnerabilidad, no una comodidad de desarrollo. Con el
+  proxy el navegador ya no depende de CORS; la lista se mantiene como defensa
+  en profundidad frente a llamadas directas al Worker.
 
 ---
 
@@ -151,6 +160,7 @@ financiero o contable profesional.
 | Ítem | Hito |
 |---|---|
 | Tests automatizados de aislamiento multi-tenant | Checkpoint 2 |
+| Verificar el login desde Safari y Chrome sobre una preview (ADR-0011) | Checkpoint 2 |
 | Rate limiting por empresa | Checkpoint 2 |
 | Cifrado del token de Mercado Pago en reposo | Checkpoint 2 |
 | Auditoría de dependencias en CI (`npm audit`) | Checkpoint 2 |
