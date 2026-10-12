@@ -37,13 +37,29 @@ en [01-plan.md §2](./01-plan.md#2-alcance).
 | Seguridad | Tests de aislamiento multi-tenant, rate limiting del chat | [#9], [#16] |
 | `AI-DECISIONS.md` | Una entrada por cada PR con código o diseño asistido, con validación humana | [`AI-DECISIONS.md`](../../AI-DECISIONS.md) |
 
-## 3. Estado del hito
+## 3. Decisiones de arquitectura de este hito
+
+Al planificar aparecieron diferencias entre la documentación del Checkpoint 1,
+el esquema y lo que el equipo ya había decidido. Cada una se cerró con un ADR
+que **precisa** al original, y con la corrección de los documentos afectados.
+Lo entregado el 28/09 se conserva en el tag
+[`v0.1`](https://github.com/colosoler/Helpyme/tree/v0.1).
+
+| ADR | Qué decide | Qué corrigió |
+|---|---|---|
+| [0011](../checkpoint-1/adr/0011-sesion-first-party-por-proxy.md) | El navegador habla solo con el frontend, que reenvía `/api/*` al Worker: la cookie de sesión no viaja entre `vercel.app` y `workers.dev` | [01-arquitectura §1.1](../checkpoint-1/01-arquitectura.md), [04-infraestructura §5](../checkpoint-1/04-infraestructura.md), [06-seguridad §2](../checkpoint-1/06-seguridad.md) |
+| [0012](../checkpoint-1/adr/0012-empresa-es-la-organizacion.md) | `empresa` y `usuario` son las tablas de Better Auth; el rol y la pertenencia viven en la membresía | [06-seguridad §2](../checkpoint-1/06-seguridad.md) |
+| [0013](../checkpoint-1/adr/0013-preview-compartido.md) | Un preview compartido, y una branch efímera de Neon por corrida para las pruebas de integración | [02-diagramas §2](../checkpoint-1/02-diagramas.md), [03-modelo-datos §5](../checkpoint-1/03-modelo-datos.md), [04-infraestructura §5](../checkpoint-1/04-infraestructura.md) |
+
+## 4. Estado del hito
 
 | Ítem | Estado |
 |---|---|
 | Plan de trabajo, milestone e issues | Listo |
-| Tablero Kanban, ruleset de `main` y dueños por frente | Pendiente |
-| Decisiones de arquitectura de la semana 1 (ADR-0011, migración `0001`) | Pendiente |
+| Ruleset de `main` activo y tablero Kanban con campos | Listo |
+| Límites de WIP del tablero y dueños por frente | Pendiente |
+| ADR-0011 a 0013 y corrección de la documentación | Listo |
+| Migración `0001` | Pendiente |
 | Infraestructura desplegada | Pendiente |
 | Backend del camino de demo | Pendiente |
 | Pruebas de integración | Pendiente |

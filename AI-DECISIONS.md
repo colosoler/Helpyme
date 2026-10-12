@@ -237,3 +237,48 @@ Como riesgos pendientes, los tests todavía se ejecutan en Node y no en workerd,
     permiso: no verificó si el tablero existe.
 - **Validación y corrección humana:** pendiente. La escribe y la firma quien
   revise el PR de este plan.
+
+## 2026-10-12 — ADR-0011 a 0013 y corrección de la documentación del Checkpoint 1
+
+- **Problema abordado:** tres diferencias entre lo documentado en el
+  Checkpoint 1 y lo que se puede implementar: la cookie de sesión no viaja
+  entre el frontend y la API, el esquema contradecía a ADR-0008 sobre la
+  pertenencia del usuario a la empresa, y la documentación prometía un entorno
+  aislado por PR que no existe (issue #12).
+- **Prompt / Herramienta:** Claude Code (Claude Opus 5.5). *«Resolver los
+  problemas que encontraste al releer todo»*, después de aprobar el plan del
+  Checkpoint 2.
+- **Código / Arquitectura generada:** ADR-0011 (el frontend hace de proxy
+  inverso de la API con rewrites de Next), ADR-0012 (`empresa` y `usuario` son
+  las tablas de Better Auth; rol y pertenencia en la membresía) y ADR-0013
+  (preview compartido, branch efímera de Neon por corrida del CI). Corrección
+  de `01-arquitectura`, `02-diagramas`, `03-modelo-datos`, `04-infraestructura`
+  y `06-seguridad`. Tag `v0.1` sobre el commit entregado el 28/09, antes de
+  editar. Sin código de producto.
+- **Riesgos señalados por la IA:**
+  - **Qué se verificó y qué no.** Contra fuentes oficiales, el 12/10/2026: que
+    `vercel.app` y `workers.dev` están en la Public Suffix List; que Better
+    Auth recomienda el proxy inverso para este caso y soporta `modelName`,
+    `fields` y `generateId: "uuid"`; que Vercel respeta el `Cache-Control` del
+    origen en los rewrites externos. **Nada se probó contra un sistema
+    desplegado**, porque no hay ninguno.
+  - **Tres comportamientos quedaron como supuestos**, con alternativa escrita
+    en el ADR: que una subida de 10 MB pase por el rewrite (#19), que el
+    streaming del chat no quede en buffer (#28) y que el adaptador de Drizzle
+    de Better Auth funcione sin transacciones interactivas (#14).
+  - **`Cache-Control: no-store` es un control nuevo** que no estaba en ningún
+    documento: sin él, el CDN de Vercel podría cachear una respuesta
+    financiera. Hay que implementarlo en el Worker y testearlo.
+  - Las razones de cada ADR las redactó la IA a partir de la documentación
+    existente y de la decisión del equipo del 28/09. Quien los apruebe tiene
+    que poder defenderlas como propias.
+  - ADR-0012 fija el mapeo de tres modelos, pero las columnas que Better Auth
+    exige en `empresa` y `usuario` no se conocen hasta correr su CLI (#14).
+  - Los límites del plan Hobby de Vercel (10 GB de transferencia, 120 s por
+    request proxeado) salen de la página de límites consultada ese día y
+    cambian con frecuencia.
+  - Se editaron documentos ya entregados. El tag `v0.1` conserva la versión
+    presentada, pero la cátedra tiene que poder distinguir qué cambió: quedó
+    listado en `entregas-cloud/checkpoint-2/README.md §3`.
+- **Validación y corrección humana:** pendiente. La escribe y la firma quien
+  revise el PR.

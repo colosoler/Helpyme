@@ -51,10 +51,16 @@ flowchart LR
         d1 --> d2 --> d3
     end
 
-    subgraph prev["Preview — por pull request"]
-        p1["Vercel Preview<br/>URL efimera"]
-        p2["Worker env=preview"]
-        p3[("Neon branch<br/>efimera del PR")]
+    subgraph ci["CI — por corrida"]
+        t1["Pruebas de integracion"]
+        t2[("Neon branch<br/>efimera")]
+        t1 --> t2
+    end
+
+    subgraph prev["Preview — compartido"]
+        p1["Vercel Preview<br/>una URL por PR"]
+        p2["Worker env=preview<br/>gana el ultimo deploy"]
+        p3[("Neon branch<br/>preview")]
         p1 --> p2 --> p3
     end
 
@@ -65,20 +71,29 @@ flowchart LR
         r1 --> r2 --> r3
     end
 
-    pr["Pull Request"] -->|"CI: lint, typecheck, test"| prev
+    pr["Pull Request"] -->|"CI: lint, typecheck, test"| ci
+    ci -->|"deploy de preview"| prev
     prev -->|"merge a main<br/>tras code review"| prod
 
     classDef e1 fill:#238636,stroke:#0f5323,color:#fff
     classDef e2 fill:#9e6a03,stroke:#5a3c02,color:#fff
     classDef e3 fill:#8250df,stroke:#4c2889,color:#fff
+    classDef e4 fill:#1f6feb,stroke:#0b3a80,color:#fff
     class d1,d2,d3 e1
     class p1,p2,p3 e2
     class r1,r2,r3 e3
+    class t1,t2 e4
 ```
 
-El **branching de base de datos de Neon** es lo que hace viable este esquema:
-cada PR obtiene una copia del esquema de producción sin duplicar
-infraestructura ni mantener seeds a mano. Es la razón principal de
+**El entorno de preview es uno solo y compartido**, no uno por PR: una cola de
+Cloudflare admite un solo Worker consumidor y un Worker apunta a una sola base.
+Lo que sí es propio de cada PR es la URL de Vercel y, en el CI, la base de las
+pruebas de integración.
+
+El **branching de base de datos de Neon** se usa donde afecta la corrección:
+una branch por desarrollador y una **efímera por corrida del CI**, creada desde
+`main` con el esquema de producción y borrada al terminar. La decisión y lo que
+se resigna están en [ADR-0013](./adr/0013-preview-compartido.md), que precisa a
 [ADR-0002](./adr/0002-persistencia-neon-postgres.md).
 
 ---
