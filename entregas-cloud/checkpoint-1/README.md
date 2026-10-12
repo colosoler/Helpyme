@@ -8,6 +8,11 @@ La consigna pide para este hito: *«Diagrama Cloud detallado, setup de
 infraestructura y repositorio inicial con actividad»*. Esta carpeta reúne todo
 lo que se entrega para cumplirlo.
 
+> **Lo entregado el 28/09 está en el tag [`v0.1`](https://github.com/colosoler/Helpyme/tree/v0.1/entregas-cloud/checkpoint-1).**
+> Estos documentos siguen vivos: describen la arquitectura vigente y se
+> corrigen cuando una decisión cambia. Los cambios posteriores al hito están
+> listados en [checkpoint-2](../checkpoint-2/README.md#3-decisiones-de-arquitectura-de-este-hito).
+
 ---
 
 ## 1. Qué pide la consigna y dónde está

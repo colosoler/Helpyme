@@ -27,6 +27,9 @@ pagar).
 | [0008](./0008-autenticacion-better-auth.md) | Better Auth con modelo de organizaciones | Aceptada |
 | [0009](./0009-sin-agregacion-bancaria.md) | Sin agregación bancaria automática en v1 | Aceptada |
 | [0010](./0010-modelo-llm-gemini.md) | Google Gemini Flash con *function calling* validado | Aceptada |
+| [0011](./0011-sesion-first-party-por-proxy.md) | Sesión *first-party*: el frontend hace de proxy inverso de la API (precisa a 0006 y 0008) | Aceptada |
+| [0012](./0012-empresa-es-la-organizacion.md) | La empresa es la organización de Better Auth (precisa a 0008) | Aceptada |
+| [0013](./0013-preview-compartido.md) | Preview compartido y branch efímera de Neon para las pruebas (precisa a 0002) | Aceptada |
 
 ## Estados posibles
 
@@ -34,3 +37,8 @@ pagar).
 
 Una decisión que cambia **no se edita**: se marca como reemplazada y se escribe
 un ADR nuevo. El historial de por qué pensábamos distinto es información útil.
+
+Cuando la decisión se mantiene pero una de sus consecuencias resultó distinta
+de lo escrito, el ADR nuevo **precisa** al anterior: lo corrige en ese punto
+sin reemplazarlo. Es el caso de los ADR 0011 a 0013, escritos durante el
+Checkpoint 2.
