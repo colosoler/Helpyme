@@ -5,11 +5,15 @@
  * Regla de oro: toda tabla de negocio lleva `empresa_id` y toda consulta
  * filtra por él.
  *
- * Las tablas propias de Better Auth (sesiones, cuentas de login, verificación)
- * se generan con su CLI al implementar F1 y se agregan acá en ese PR.
+ * `empresa` y `usuario` son las tablas de los modelos `organization` y
+ * `user` de Better Auth (ADR-0012). El resto de sus tablas (membresía,
+ * sesiones, cuentas de acceso, verificación) se genera con su CLI al
+ * implementar F1 y se agrega acá en ese PR.
  */
+import { sql } from "drizzle-orm";
 import {
   boolean,
+  check,
   date,
   index,
   integer,
@@ -29,9 +33,18 @@ const dinero = (nombre: string) => numeric(nombre, { precision: 14, scale: 2 });
 
 const creadoEn = () => timestamp("created_at", { withTimezone: true }).notNull().defaultNow();
 
+// Borrado lógico: la baja marca la fila, no la elimina.
+const borradoEn = () => timestamp("deleted_at", { withTimezone: true });
+
+// RESTRICT y no CASCADE: borrar físicamente una empresa con historial falla,
+// en lugar de arrastrar sus datos financieros (03-modelo-datos §3.6).
+const deEmpresa = () =>
+  uuid("empresa_id")
+    .notNull()
+    .references(() => empresa.id, { onDelete: "restrict" });
+
 // --- Enums ------------------------------------------------------------------
 
-export const rolUsuario = pgEnum("rol_usuario", ["owner", "member"]);
 export const tipoCuenta = pgEnum("tipo_cuenta", ["banco", "mercadopago", "efectivo"]);
 export const tipoCategoria = pgEnum("tipo_categoria", ["ingreso", "egreso"]);
 export const origenMovimiento = pgEnum("origen_movimiento", ["import", "manual", "api"]);
@@ -42,7 +55,15 @@ export const estadoCuentaCorriente = pgEnum("estado_cuenta_corriente", [
   "saldada",
   "anulada",
 ]);
-export const estadoImport = pgEnum("estado_import", ["pendiente", "procesando", "listo", "error"]);
+// `listo`: filas interpretadas y a la espera de revisión. Los movimientos
+// recién existen al pasar a `confirmado` (ADR-0014).
+export const estadoImport = pgEnum("estado_import", [
+  "pendiente",
+  "procesando",
+  "listo",
+  "confirmado",
+  "error",
+]);
 export const rolMensaje = pgEnum("rol_mensaje", ["user", "assistant"]);
 export const severidadAlerta = pgEnum("severidad_alerta", ["info", "media", "alta"]);
 
@@ -53,21 +74,21 @@ export const empresa = pgTable("empresa", {
   nombre: text("nombre").notNull(),
   cuit: text("cuit").unique(),
   createdAt: creadoEn(),
+  deletedAt: borradoEn(),
 });
 
+// Sin `empresa_id` ni `rol`: la pertenencia y el rol viven en la membresía
+// de Better Auth, que es la única fuente de verdad (ADR-0012).
 export const usuario = pgTable(
   "usuario",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    empresaId: uuid("empresa_id")
-      .notNull()
-      .references(() => empresa.id, { onDelete: "cascade" }),
     email: text("email").notNull(),
     nombre: text("nombre"),
-    rol: rolUsuario("rol").notNull().default("member"),
     createdAt: creadoEn(),
+    deletedAt: borradoEn(),
   },
-  (t) => [uniqueIndex("usuario_email_uq").on(t.email), index("usuario_empresa_idx").on(t.empresaId)],
+  (t) => [uniqueIndex("usuario_email_uq").on(t.email)],
 );
 
 // --- Dinero -----------------------------------------------------------------
@@ -76,23 +97,29 @@ export const cuenta = pgTable(
   "cuenta",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    empresaId: uuid("empresa_id")
-      .notNull()
-      .references(() => empresa.id, { onDelete: "cascade" }),
+    empresaId: deEmpresa(),
     tipo: tipoCuenta("tipo").notNull(),
     nombre: text("nombre").notNull(),
+    // Saldo al cierre de `fechaSaldoInicial`. Sin declarar, el saldo de la
+    // cuenta no se puede calcular y la UI lo dice (03-modelo-datos §3.7).
+    saldoInicial: dinero("saldo_inicial"),
+    fechaSaldoInicial: date("fecha_saldo_inicial"),
     createdAt: creadoEn(),
   },
-  (t) => [index("cuenta_empresa_idx").on(t.empresaId)],
+  (t) => [
+    index("cuenta_empresa_idx").on(t.empresaId),
+    check(
+      "cuenta_saldo_inicial_completo",
+      sql`(${t.saldoInicial} is null) = (${t.fechaSaldoInicial} is null)`,
+    ),
+  ],
 );
 
 export const categoria = pgTable(
   "categoria",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    empresaId: uuid("empresa_id")
-      .notNull()
-      .references(() => empresa.id, { onDelete: "cascade" }),
+    empresaId: deEmpresa(),
     nombre: text("nombre").notNull(),
     tipo: tipoCategoria("tipo").notNull(),
     createdAt: creadoEn(),
@@ -104,10 +131,9 @@ export const reglaCategoria = pgTable(
   "regla_categoria",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    empresaId: uuid("empresa_id")
-      .notNull()
-      .references(() => empresa.id, { onDelete: "cascade" }),
+    empresaId: deEmpresa(),
     patron: text("patron").notNull(),
+    // Una regla es configuración de su categoría, no historial: se va con ella.
     categoriaId: uuid("categoria_id")
       .notNull()
       .references(() => categoria.id, { onDelete: "cascade" }),
@@ -122,9 +148,11 @@ export const imports = pgTable(
   "import",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    empresaId: uuid("empresa_id")
+    empresaId: deEmpresa(),
+    // Cuenta a la que van los movimientos al confirmar.
+    cuentaId: uuid("cuenta_id")
       .notNull()
-      .references(() => empresa.id, { onDelete: "cascade" }),
+      .references(() => cuenta.id, { onDelete: "restrict" }),
     r2Key: text("r2_key").notNull(),
     nombreArchivo: text("nombre_archivo").notNull(),
     estado: estadoImport("estado").notNull().default("pendiente"),
@@ -136,18 +164,48 @@ export const imports = pgTable(
   (t) => [index("import_empresa_created_idx").on(t.empresaId, t.createdAt.desc())],
 );
 
+// Filas interpretadas de un extracto, a la espera de que el usuario confirme.
+// No son movimientos: no cuentan en ningún indicador (ADR-0014).
+export const importFila = pgTable(
+  "import_fila",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    empresaId: deEmpresa(),
+    importId: uuid("import_id")
+      .notNull()
+      .references(() => imports.id, { onDelete: "cascade" }),
+    numeroFila: integer("numero_fila").notNull(),
+    fecha: date("fecha"),
+    monto: dinero("monto"),
+    descripcion: text("descripcion"),
+    hashDedup: text("hash_dedup"),
+    categoriaId: uuid("categoria_id").references(() => categoria.id, { onDelete: "set null" }),
+    // Motivo por el que la fila no se pudo interpretar; nulo si es válida.
+    error: text("error"),
+    createdAt: creadoEn(),
+  },
+  (t) => [
+    // Reentregar el mensaje de la cola no duplica filas.
+    uniqueIndex("import_fila_import_numero_uq").on(t.importId, t.numeroFila),
+    check(
+      "import_fila_valida_o_error",
+      sql`${t.error} is not null or (${t.fecha} is not null and ${t.monto} is not null and ${t.descripcion} is not null and ${t.hashDedup} is not null)`,
+    ),
+  ],
+);
+
 export const movimiento = pgTable(
   "movimiento",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    empresaId: uuid("empresa_id")
-      .notNull()
-      .references(() => empresa.id, { onDelete: "cascade" }),
+    empresaId: deEmpresa(),
     cuentaId: uuid("cuenta_id")
       .notNull()
-      .references(() => cuenta.id, { onDelete: "cascade" }),
+      .references(() => cuenta.id, { onDelete: "restrict" }),
     // Nullable a propósito: «sin categorizar» es un estado válido y visible.
     categoriaId: uuid("categoria_id").references(() => categoria.id, { onDelete: "set null" }),
+    // Proveedor o cliente. Nullable por el mismo motivo que la categoría.
+    contactoId: uuid("contacto_id").references(() => contacto.id, { onDelete: "set null" }),
     importId: uuid("import_id").references(() => imports.id, { onDelete: "set null" }),
     fecha: date("fecha").notNull(),
     // Positivo = ingreso, negativo = egreso.
@@ -168,9 +226,7 @@ export const documento = pgTable(
   "documento",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    empresaId: uuid("empresa_id")
-      .notNull()
-      .references(() => empresa.id, { onDelete: "cascade" }),
+    empresaId: deEmpresa(),
     movimientoId: uuid("movimiento_id").references(() => movimiento.id, { onDelete: "set null" }),
     // Postgres guarda la referencia; los bytes viven en R2.
     r2Key: text("r2_key").notNull(),
@@ -186,9 +242,7 @@ export const contacto = pgTable(
   "contacto",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    empresaId: uuid("empresa_id")
-      .notNull()
-      .references(() => empresa.id, { onDelete: "cascade" }),
+    empresaId: deEmpresa(),
     nombre: text("nombre").notNull(),
     tipo: tipoContacto("tipo").notNull(),
     createdAt: creadoEn(),
@@ -200,9 +254,7 @@ export const cuentaCorriente = pgTable(
   "cuenta_corriente",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    empresaId: uuid("empresa_id")
-      .notNull()
-      .references(() => empresa.id, { onDelete: "cascade" }),
+    empresaId: deEmpresa(),
     contactoId: uuid("contacto_id")
       .notNull()
       .references(() => contacto.id, { onDelete: "restrict" }),
@@ -221,28 +273,31 @@ export const alerta = pgTable(
   "alerta",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    empresaId: uuid("empresa_id")
-      .notNull()
-      .references(() => empresa.id, { onDelete: "cascade" }),
+    empresaId: deEmpresa(),
     tipo: text("tipo").notNull(),
     severidad: severidadAlerta("severidad").notNull(),
     payload: jsonb("payload").notNull(),
+    // Identifica el hecho que disparó la alerta (regla + entidad + período).
+    // Correr el cron dos veces sobre los mismos datos no la duplica.
+    claveDedup: text("clave_dedup").notNull(),
     leida: boolean("leida").notNull().default(false),
     createdAt: creadoEn(),
   },
-  (t) => [index("alerta_empresa_leida_idx").on(t.empresaId, t.leida, t.createdAt.desc())],
+  (t) => [
+    index("alerta_empresa_leida_idx").on(t.empresaId, t.leida, t.createdAt.desc()),
+    uniqueIndex("alerta_empresa_clave_uq").on(t.empresaId, t.claveDedup),
+  ],
 );
 
 export const conversacion = pgTable(
   "conversacion",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    empresaId: uuid("empresa_id")
-      .notNull()
-      .references(() => empresa.id, { onDelete: "cascade" }),
+    empresaId: deEmpresa(),
+    // Las conversaciones son el registro de auditoría del asesor.
     usuarioId: uuid("usuario_id")
       .notNull()
-      .references(() => usuario.id, { onDelete: "cascade" }),
+      .references(() => usuario.id, { onDelete: "restrict" }),
     createdAt: creadoEn(),
   },
   (t) => [index("conversacion_empresa_idx").on(t.empresaId)],
@@ -252,6 +307,10 @@ export const mensaje = pgTable(
   "mensaje",
   {
     id: uuid("id").primaryKey().defaultRandom(),
+    // Repetido de la conversación a propósito: la regla de oro no tiene
+    // excepciones y el mensaje se puede filtrar sin pasar por otra tabla.
+    empresaId: deEmpresa(),
+    // Un mensaje es parte de su conversación: no existe sin ella.
     conversacionId: uuid("conversacion_id")
       .notNull()
       .references(() => conversacion.id, { onDelete: "cascade" }),
