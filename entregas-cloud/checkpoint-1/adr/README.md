@@ -30,6 +30,7 @@ pagar).
 | [0011](./0011-sesion-first-party-por-proxy.md) | Sesión *first-party*: el frontend hace de proxy inverso de la API (precisa a 0006 y 0008) | Aceptada |
 | [0012](./0012-empresa-es-la-organizacion.md) | La empresa es la organización de Better Auth (precisa a 0008) | Aceptada |
 | [0013](./0013-preview-compartido.md) | Preview compartido y branch efímera de Neon para las pruebas (precisa a 0002) | Aceptada |
+| [0014](./0014-staging-de-imports.md) | Las filas de un import esperan en una tabla aparte hasta confirmarse (precisa a 0005) | Aceptada |
 
 ## Estados posibles
 
@@ -40,5 +41,5 @@ un ADR nuevo. El historial de por qué pensábamos distinto es información úti
 
 Cuando la decisión se mantiene pero una de sus consecuencias resultó distinta
 de lo escrito, el ADR nuevo **precisa** al anterior: lo corrige en ese punto
-sin reemplazarlo. Es el caso de los ADR 0011 a 0013, escritos durante el
+sin reemplazarlo. Es el caso de los ADR 0011 a 0014, escritos durante el
 Checkpoint 2.

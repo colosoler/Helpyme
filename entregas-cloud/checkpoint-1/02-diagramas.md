@@ -127,8 +127,10 @@ sequenceDiagram
     Q->>C: entrega el mensaje
     C->>R: GET objeto
     C->>C: parsea, normaliza,<br/>calcula hash_dedup,<br/>aplica reglas de categoria
-    C->>DB: INSERT movimientos (ON CONFLICT DO NOTHING)
+    C->>DB: INSERT import_fila (ON CONFLICT DO NOTHING)
     C->>DB: UPDATE import (estado=listo, filas_ok, filas_error)
+
+    Note over C,DB: Todavia no existe ningun movimiento.<br/>Las filas esperan en import_fila.
 
     loop polling cada 2s
         N->>W: GET /v1/imports/:id
@@ -140,15 +142,20 @@ sequenceDiagram
     U->>N: corrige categorias y confirma
     N->>W: POST /v1/imports/:id/confirm
     W->>DB: aplica correcciones<br/>+ INSERT regla_categoria
+    W->>DB: INSERT movimiento SELECT import_fila<br/>(ON CONFLICT DO NOTHING)
+    W->>DB: UPDATE import (estado=confirmado)
 ```
 
 Puntos de diseño que importan:
 
 - **`202 Accepted`, no `200`.** La API dice «lo recibí», no «lo terminé». El
   contrato con el frontend es explícito sobre la asincronía.
-- **`ON CONFLICT DO NOTHING`** sobre el índice único de `hash_dedup`: la
-  deduplicación de extractos con períodos solapados la resuelve la base, no un
-  `SELECT` previo que sería una condición de carrera.
+- **Nada cuenta hasta confirmar.** El consumidor escribe en `import_fila`, no en
+  `movimiento`: una fila sin revisar no puede aparecer en el dashboard ni en una
+  respuesta del asesor ([ADR-0014](./adr/0014-staging-de-imports.md)).
+- **`ON CONFLICT DO NOTHING`** sobre el índice único de `hash_dedup`, al
+  confirmar: la deduplicación de extractos con períodos solapados la resuelve
+  la base, no un `SELECT` previo que sería una condición de carrera.
 - **Reintentos y DLQ.** Si el consumer falla, Queues reintenta; agotados los
   intentos, el mensaje va a una *dead letter queue* y el import queda en estado
   `error` con el detalle visible para el usuario.
