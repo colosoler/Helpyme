@@ -282,3 +282,64 @@ Como riesgos pendientes, los tests todavía se ejecutan en Node y no en workerd,
     listado en `entregas-cloud/checkpoint-2/README.md §3`.
 - **Validación y corrección humana:** pendiente. La escribe y la firma quien
   revise el PR.
+
+## 2026-10-12 — Migración `0001`: integridad del historial y staging de imports
+
+- **Problema abordado:** el esquema del Checkpoint 1 no permitía implementar el
+  camino de demo sin romper garantías: `usuario.empresa_id` seguía presente
+  aunque el equipo había decidido quitarlo, un import no tenía cómo esperar la
+  confirmación del usuario, y faltaban el proveedor del movimiento, el saldo
+  inicial de las cuentas y la idempotencia de las alertas (issue #13).
+- **Prompt / Herramienta:** Claude Code (Claude Opus 5.5). *«Resolver los
+  problemas que encontraste al releer todo»*, el mismo pedido que la entrada
+  anterior.
+- **Código / Arquitectura generada:** cambios en `packages/db/src/schema.ts` y
+  migración `0001` generada con Drizzle Kit: `usuario` sin `empresa_id` ni
+  `rol`; `deleted_at` en `empresa` y `usuario`; claves foráneas a `empresa`,
+  `cuenta` y `usuario` de `CASCADE` a `RESTRICT`; tabla `import_fila` y estado
+  `confirmado`; `import.cuenta_id`; `movimiento.contacto_id`;
+  `cuenta.saldo_inicial` con su fecha; `alerta.clave_dedup`;
+  `mensaje.empresa_id`. ADR-0014 y `03-modelo-datos §3.6 a §3.10`. Once tests
+  del esquema sobre un PostgreSQL embebido (PGlite) y un test de contrato entre
+  `ESTADOS_IMPORT` y el enum de la base.
+- **Riesgos señalados por la IA:**
+  - **Tres decisiones de diseño son de la IA y nadie del equipo las pidió.**
+    Hay que confirmarlas o cambiarlas antes de construir encima:
+    1. *Staging en lugar de una marca.* El plan decía «agregar el estado
+       `confirmado`»; la IA eligió una tabla aparte (`import_fila`) y cambió el
+       flujo de ADR-0005. Afecta a los issues #21 y #22.
+    2. *Saldo inicial anclado a una fecha*, con los dos campos opcionales. La
+       consecuencia es que una cuenta sin saldo declarado no tiene saldo: la
+       interfaz tiene que decirlo.
+    3. *El número de ocurrencia dentro del hash de deduplicación.* Está
+       documentado en `03-modelo-datos §3.2` pero no implementado: lo hace el
+       parser (#20). Tiene un caso límite sin resolver, escrito ahí mismo.
+  - **`mensaje.empresa_id` no estaba en el plan.** La IA lo encontró al escribir
+    un test que recorre el catálogo: `mensaje` era la única tabla de negocio que
+    incumplía la regla de oro. No hay clave compuesta que obligue a que
+    coincida con el de la conversación.
+  - **`usuario.rol` se eliminó junto con `empresa_id`.** El equipo solo había
+    decidido lo segundo; la IA lo extendió porque un rol sin empresa no
+    significa nada (ADR-0012).
+  - **`deleted_at` solo está en `empresa` y `usuario`.** El equipo habló de
+    «datos financieros»; la IA no lo puso en `movimiento` porque el MVP no
+    tiene ninguna operación que borre uno, y cada consulta habría tenido que
+    filtrarlo. Si se quiere borrado lógico de movimientos, es otra migración.
+  - **La migración falla si `alerta`, `import` o `mensaje` tienen filas**: les
+    agrega columnas `NOT NULL` sin valor por defecto. Hoy ningún código escribe
+    en ellas y no hay entornos desplegados. Se verificó que sí aplica sobre una
+    base con empresas, usuarios, cuentas, movimientos y conversaciones.
+  - **Se probó contra PGlite, no contra Neon.** Es PostgreSQL, pero no es el
+    motor ni el driver de producción. El criterio «aplicada en una branch de
+    Neon» del issue queda pendiente hasta tener la cuenta (#3).
+  - **Drizzle Kit pide una terminal interactiva** cuando una tabla pierde y gana
+    columnas a la vez. La IA le respondió por un pipe con la opción por defecto
+    («crear columna») y verificó en el SQL que `usuario` no tuviera ningún
+    renombre. Quien regenere una migración así tiene que hacerlo en una
+    terminal real.
+  - Se agregó una dependencia de desarrollo, `@electric-sql/pglite`.
+  - `movimiento.contacto_id` existe, pero nada lo completa todavía: sin un
+    mecanismo que asigne el proveedor, `getGastosPorProveedor` devuelve todo
+    como «sin proveedor».
+- **Validación y corrección humana:** pendiente. La escribe y la firma quien
+  revise el PR.
